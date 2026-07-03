@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+  auto
+}
+
+enum MealPlanStatus {
+  active
+  rejected
+}
+
+enum AuthProviderType {
+  google
+  apple
+}
+
+//=========== user
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String? // nullable because we will use OAuth for authentication
+  createdAt DateTime @default(now())
+
+  authProviders  AuthProvider[]
+  meals          Meal[]
+  dailySummaries DailySummary[]
+  nutritionGoal  UserNutritionGoal?
+  weights        WeightHistory[]
+  waterLogs      WaterLog[]
+  mealPlans      MealPlan[]
+}
+
+// ========= auth providers (google, apple, etc.)
+model AuthProvider {
+  id             String           @id @default(uuid())
+  userId         String
+  provider       AuthProviderType //google or Apple
+  providerUserId String //id user in the provider
+  createdAt      DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+}
+
+// =========== meals
+model Meal {
+  id            String   @id @default(uuid())
+  userId        String
+  createdAt     DateTime @default(now())
+  mealType      MealType @default(auto)
+  aiRawResponse Json // full JSON from AI (for debugging)
+  aiStatus      String   @default("ok") // ok, retried, failed
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealItem[]
+
+  @@index([userId, createdAt])
+}
+
+// ======= meal items
+model MealItem {
+  id       String @id @default(uuid())
+  mealId   String
+  name     String
+  quantity Float
+  unit     String // g, ml, unit, etc.
+  calories Float
+  protein  Float
+  carbs    Float
+  fat      Float
+  fiber    Float
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+}
+
+// ======== Daily summary
+model DailySummary {
+  userId   String
+  date     DateTime @db.Date
+  calories Float
+  protein  Float
+  carbs    Float
+  fat      Float
+  fiber    Float
+  water    Float? // optional, for future use
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // one summary per day
+  @@index([userId, date])
+}
+
+// ============ user nutrition goals TDEE
+model UserNutritionGoal {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  dailyCalorieTarget Float
+  proteinTarget      Float
+  carbsTarget        Float
+  fatTarget          Float
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ====== weight history
+model WeightHistory {
+  id     String   @id @default(uuid())
+  userId String
+  weight Float
+  date   DateTime @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// ====== water logs
+model WaterLog {
+  id       String   @id @default(uuid())
+  userId   String
+  amountMl Float
+  date     DateTime @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+// ============ meal plans
+model MealPlan {
+  id        String         @id @default(uuid())
+  userId    String
+  planJson  Json // structured diet plan (detailed later)
+  status    MealPlanStatus @default(active)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
