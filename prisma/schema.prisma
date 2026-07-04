@@ -16,11 +16,12 @@ datasource db {
 
 // Enums
 enum MealType {
-  breakfast
-  lunch
-  dinner
-  snack
-  auto
+  cafe_da_manha
+  almoco
+  lanche
+  jantar
+  ceia
+  livre
 }
 
 enum MealPlanStatus {
@@ -58,7 +59,7 @@ model AuthProvider {
   providerUserId String //id user in the provider
   createdAt      DateTime         @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerUserId])
   @@unique([userId, provider])
@@ -69,11 +70,11 @@ model Meal {
   id            String   @id @default(uuid())
   userId        String
   createdAt     DateTime @default(now())
-  mealType      MealType @default(auto)
+  mealType      String @default("livre") // cafe_da_manha, almoco, lanche, jantar, ceia, livre
   aiRawResponse Json // full JSON from AI (for debugging)
   aiStatus      String   @default("ok") // ok, retried, failed
 
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   items MealItem[]
 
   @@index([userId, createdAt])
@@ -92,7 +93,7 @@ model MealItem {
   fat      Float
   fiber    Float
 
-  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  meal       Meal  @relation(fields: [mealId], references: [id], onDelete: Cascade)
 }
 
 // ======== Daily summary
@@ -106,7 +107,7 @@ model DailySummary {
   fiber    Float
   water    Float? // optional, for future use
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date]) // one summary per day
   @@index([userId, date])
@@ -123,7 +124,7 @@ model UserNutritionGoal {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ====== weight history
@@ -133,7 +134,7 @@ model WeightHistory {
   weight Float
   date   DateTime @db.Date
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@index([userId, date])
@@ -146,7 +147,7 @@ model WaterLog {
   amountMl Float
   date     DateTime @db.Date
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
 }
@@ -160,7 +161,7 @@ model MealPlan {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
 }
