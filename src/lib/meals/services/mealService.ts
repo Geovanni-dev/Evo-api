@@ -112,6 +112,7 @@ export const getDailyMeals = async (userId: string, date: Date) => {
   };
 };
 
+// FUNCTION FOR GET MEAL BY TYPE
 export const getMealByType = async (mealType: string, userId: string) => {
   const start = new Date(); // Create a new Date object for the start of the day
   const end = new Date();
@@ -149,8 +150,106 @@ export const getMealByType = async (mealType: string, userId: string) => {
   };
 };
 
+// FUNCTION FOR UPDATE A MEAL
+export const updateMeal = async (
+  mealId: string,
+  userId: string,
+  payload: CreateMealPayload,
+) => {
+  // Query the database for the meal to be updated
+  const meal = await prisma.meal.findFirst({
+    where: {
+      id: mealId,
+      userId,
+    },
+    include: { items: true }, // Include the related meal items in the response
+  });
+
+  if (!meal) {
+    throw new Error('Refeição não encontrada');
+  }
+
+  const oldTotal = meal.items.reduce(
+    (acc, item) => ({
+      calories: acc.calories + item.calories,
+      protein: acc.protein + item.protein,
+      carbs: acc.carbs + item.carbs,
+      fat: acc.fat + item.fat,
+      fiber: acc.fiber + item.fiber,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+  );
+
+  const newTotal = payload.items.reduce(
+    (acc, item) => ({
+      calories: acc.calories + item.calories,
+      protein: acc.protein + item.protein,
+      carbs: acc.carbs + item.carbs,
+      fat: acc.fat + item.fat,
+      fiber: acc.fiber + item.fiber,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+  );
+
+  const difference = {
+    calories: newTotal.calories - oldTotal.calories,
+    protein: newTotal.protein - oldTotal.protein,
+    carbs: newTotal.carbs - oldTotal.carbs,
+    fat: newTotal.fat - oldTotal.fat,
+    fiber: newTotal.fiber - oldTotal.fiber,
+  }; // Calculate the difference between the old and new totals
+
+  await prisma.$transaction(async (tx) => {
+    await tx.meal.update({
+      where: { id: mealId },
+      data: {
+        mealType: payload.mealType || meal.mealType,
+      },
+    });
+    await tx.mealItem.deleteMany({
+      where: {
+        mealId,
+      },
+    });
+
+    await tx.mealItem.createMany({
+      data: payload.items.map((item) => ({
+        ...item,
+        mealId,
+      })),
+    });
+    // Update the daily summary
+    const date = meal.createdAt;
+
+    await tx.dailySummary.update({
+      where: { userId_date: { userId, date } },
+      data: {
+        calories: { increment: difference.calories },
+        protein: { increment: difference.protein },
+        carbs: { increment: difference.carbs },
+        fat: { increment: difference.fat },
+        fiber: { increment: difference.fiber },
+      },
+    });
+  });
+
+  const updatedMeal = await prisma.meal.findFirst({
+    where: {
+      id: mealId,
+      userId,
+    },
+    include: { items: true }, // Include the related meal items in the response
+  });
+
+  return {
+    meal: updatedMeal,
+    total: newTotal,
+  };
+};
+
 export default {
   createMeal,
   getDailyMeals,
   getMealByType,
+  updateMeal,
 };

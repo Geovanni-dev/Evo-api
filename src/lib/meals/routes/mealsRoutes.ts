@@ -9,4 +9,6 @@ router.get('/daily', mealsController.index); // Define a GET route for retrievin
 
 router.get('/daily/:mealType', mealsController.show); // Define a GET route for retrieving a specific meal by type, protected by authentication middleware
 
+router.put('/daily/:id', mealsController.update); // Define a PUT route for updating a meal, protected by authentication middleware
+
 export default router; // Export the router
