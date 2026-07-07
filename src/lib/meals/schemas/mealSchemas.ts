@@ -6,10 +6,10 @@ const itemSchema = z.object({
   name: z.string().min(3),
   quantity: z.number().positive(),
   unit: z.string().min(1),
-  calories: z.number().positive(),
-  protein: z.number().positive(),
-  carbs: z.number().positive(),
-  fat: z.number().positive(),
+  calories: z.number().min(0),
+  protein: z.number().min(0),
+  carbs: z.number().min(0),
+  fat: z.number().min(0),
   fiber: z.number().min(0),
 });
 

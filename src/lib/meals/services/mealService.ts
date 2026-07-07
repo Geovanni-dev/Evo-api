@@ -3,6 +3,7 @@ import type { CreateMealPayload } from '../schemas/mealSchemas.js'; // Import th
 
 //============================== mealService
 
+// FUNCTION FOR CREATE A MEAL
 export const createMeal = async (
   payload: CreateMealPayload,
   userId: string,
@@ -60,4 +61,96 @@ export const createMeal = async (
 
     return meal;
   });
+};
+
+// FUNCTION FOR GET DAILY MEALS
+export const getDailyMeals = async (userId: string, date: Date) => {
+  const start = new Date(date); // Create a new Date object for the start of the day
+  const end = new Date(date); // Create a new Date object for the end of the day
+  end.setHours(23, 59, 59, 999);
+  start.setHours(0, 0, 0, 0);
+  // Query the database for meals created by the user on the specified date, including related meal items
+  const meals = await prisma.meal.findMany({
+    where: {
+      userId,
+      createdAt: {
+        gte: start,
+        lt: end,
+      },
+    },
+    include: { items: true }, // Include the related meal items in the response
+  });
+  // Query the database for the daily summary of the user on the specified date
+  const dailySummary = await prisma.dailySummary.findUnique({
+    where: {
+      userId_date: {
+        userId,
+        date: start,
+      },
+    },
+  });
+  // Query the database for the user's nutrition goal
+  const nutritionGoal = await prisma.userNutritionGoal.findUnique({
+    where: {
+      userId,
+    },
+  });
+  /*if (!nutritionGoal) {
+    throw new Error('TDEE do usuário não encontrado');
+  }*/
+
+  return {
+    meals,
+    totals: dailySummary || {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      fiber: 0,
+    },
+    tdee: nutritionGoal?.dailyCalorieTarget ?? null,
+  };
+};
+
+export const getMealByType = async (mealType: string, userId: string) => {
+  const start = new Date(); // Create a new Date object for the start of the day
+  const end = new Date();
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+  const meal = await prisma.meal.findFirst({
+    where: {
+      mealType,
+      userId,
+      createdAt: {
+        gte: start,
+        lt: end,
+      },
+    },
+    include: { items: true }, // Include the related meal items in the response
+  });
+
+  if (!meal) {
+    throw new Error('Refeição não encontrada');
+  }
+  const total = meal.items.reduce(
+    (acc, item) => ({
+      calories: acc.calories + item.calories,
+      protein: acc.protein + item.protein,
+      carbs: acc.carbs + item.carbs,
+      fat: acc.fat + item.fat,
+      fiber: acc.fiber + item.fiber,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+  );
+
+  return {
+    meal,
+    total,
+  };
+};
+
+export default {
+  createMeal,
+  getDailyMeals,
+  getMealByType,
 };

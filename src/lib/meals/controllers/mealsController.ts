@@ -1,6 +1,10 @@
 import type { Request, Response } from 'express'; // Import the Request and Response types from the Express library
 import mealSchema from '../schemas/mealSchemas.js'; // Import the mealSchema for validation
-import { createMeal } from '../services/mealService.js'; // Import the createMeal service function
+import {
+  createMeal,
+  getDailyMeals,
+  getMealByType,
+} from '../services/mealService.js'; // Import the createMeal service function
 import { z } from 'zod'; // Import the zod library for schema validation
 
 //============================== mealsControllers
@@ -28,18 +32,70 @@ export const store = async (req: Request, res: Response) => {
   }
 };
 
-export const index = async (req: Request, res: Response) => {};
+// FUNCTION FOR GET ALL MEALS
+export const index = async (req: Request, res: Response) => {
+  try {
+    const userId =
+      (req.headers['x-user-id'] as string) ||
+      (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
+    if (!userId) {
+      return res.status(401).json({ error: ' Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+    }
+    const result = await getDailyMeals(userId, new Date()); // Call the getDailyMeals service function to retrieve the meals for the user
+    return res.status(200).json(result); // Return the retrieved meals with a 200 status code
+  } catch (error) {
+    console.log(error);
+    if (
+      error instanceof Error &&
+      error.message === 'TDEE do usuário nao encontrado'
+    ) {
+      return res.status(404).json({ error: 'TDEE do usuário não encontrado' }); // Return a 404 status code if the user's TDEE is not found
+    } else {
+      return res.status(500).json({ error: 'Internal server error' }); // Return a generic error message with a 500 status code
+    }
+  }
+};
 
-export const show = async (req: Request, res: Response) => {};
+export const show = async (req: Request, res: Response) => {
+  try {
+    const userId =
+      (req.headers['x-user-id'] as string) ||
+      (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
+    if (!userId) {
+      return res.status(401).json({ error: ' Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+    }
+    const { mealType } = req.params;
+    if (!mealType) {
+      return res.status(400).json({ error: 'Tipo de refeição nao fornecido' }); // Return a 400 status code if the mealType is not provided
+    }
+    if (typeof mealType !== 'string') {
+      return res
+        .status(400)
+        .json({ error: 'Tipo de refeição deve ser uma string' }); // Return a 400 status code if the mealType is not a string
+    }
+    const result = await getMealByType(mealType, userId);
+    if (!result) {
+      return res.status(404).json({ error: 'Refeição não encontrada' }); // Return a 404 status code if the meal is not found
+    }
+    return res.status(200).json(result); // Return the retrieved meal with a 200 status code
+  } catch (error) {
+    console.log(error);
+    if (error instanceof Error && error.message === 'Refeição não encontrada') {
+      return res.status(404).json({ error: 'Refeição não encontrada' }); // Return a 404 status code if the meal is not found
+    } else {
+      return res.status(500).json({ error: 'Internal server error' }); // Return a generic error message with a 500 status code
+    }
+  }
+};
 
-export const update = async (req: Request, res: Response) => {};
+//export const update = async (req: Request, res: Response) => {};
 
-export const destroy = async (req: Request, res: Response) => {};
+//export const destroy = async (req: Request, res: Response) => {};
 
 export default {
   store,
   index,
   show,
-  update,
-  destroy,
+  //update,
+  //destroy,
 };

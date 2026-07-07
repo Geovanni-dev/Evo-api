@@ -3,6 +3,10 @@ import mealsController from '../controllers/mealsController.js'; // Import the m
 
 const router = Router(); // Create a new instance of the Router class
 
-router.post('/meals', mealsController.store); // Define a POST route for creating a meal, protected by authentication middleware
+router.post('/', mealsController.store); // Define a POST route for creating a meal, protected by authentication middleware
+
+router.get('/daily', mealsController.index); // Define a GET route for retrieving all meals, protected by authentication middleware
+
+router.get('/daily/:mealType', mealsController.show); // Define a GET route for retrieving a specific meal by type, protected by authentication middleware
 
 export default router; // Export the router
