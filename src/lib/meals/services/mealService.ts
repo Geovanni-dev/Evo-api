@@ -168,7 +168,7 @@ export const updateMeal = async (
   if (!meal) {
     throw new Error('Refeição não encontrada');
   }
-
+  // Calculate the difference between the old and new totals
   const oldTotal = meal.items.reduce(
     (acc, item) => ({
       calories: acc.calories + item.calories,
@@ -179,7 +179,7 @@ export const updateMeal = async (
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
-
+  // Calculate the new total
   const newTotal = payload.items.reduce(
     (acc, item) => ({
       calories: acc.calories + item.calories,
@@ -190,7 +190,7 @@ export const updateMeal = async (
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
-
+  // Calculate the difference
   const difference = {
     calories: newTotal.calories - oldTotal.calories,
     protein: newTotal.protein - oldTotal.protein,
@@ -198,7 +198,7 @@ export const updateMeal = async (
     fat: newTotal.fat - oldTotal.fat,
     fiber: newTotal.fiber - oldTotal.fiber,
   }; // Calculate the difference between the old and new totals
-
+  // Query the database for the meal to be updated
   await prisma.$transaction(async (tx) => {
     await tx.meal.update({
       where: { id: mealId },
@@ -247,9 +247,121 @@ export const updateMeal = async (
   };
 };
 
+// FUNCTION FOR DELETE A MEAL
+export const deleteMeal = async (mealId: string, userId: string) => {
+  const meal = await prisma.meal.findFirst({
+    where: {
+      id: mealId,
+      userId,
+    },
+    include: { items: true }, // Include the related meal items in the response
+  });
+  if (!meal) {
+    throw new Error('Refeição nao encontrada');
+  }
+
+  // Calculate the total
+  const total = meal.items.reduce(
+    (acc, item) => ({
+      calories: acc.calories + item.calories,
+      protein: acc.protein + item.protein,
+      carbs: acc.carbs + item.carbs,
+      fat: acc.fat + item.fat,
+      fiber: acc.fiber + item.fiber,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+  );
+
+  const date = meal.createdAt;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.mealItem.deleteMany({
+      where: {
+        mealId,
+      },
+    });
+    await tx.meal.delete({
+      where: {
+        id: mealId,
+      },
+    });
+    await tx.dailySummary.update({
+      where: { userId_date: { userId, date } },
+      data: {
+        calories: {
+          decrement: meal.items.reduce((acc, item) => acc + item.calories, 0),
+        },
+        protein: {
+          decrement: meal.items.reduce((acc, item) => acc + item.protein, 0),
+        },
+        carbs: {
+          decrement: meal.items.reduce((acc, item) => acc + item.carbs, 0),
+        },
+        fat: { decrement: meal.items.reduce((acc, item) => acc + item.fat, 0) },
+        fiber: {
+          decrement: meal.items.reduce((acc, item) => acc + item.fiber, 0),
+        },
+      },
+    });
+  });
+  return { message: 'Refeição deletada com sucesso', total }; // Return the deleted meal
+};
+
+// FUNCTION FOR DELETE A MEAL ITEM
+export const deleteItem = async (
+  mealId: string,
+  itemId: string,
+  userId: string,
+) => {
+  const item = await prisma.mealItem.findFirst({
+    where: {
+      id: itemId,
+      mealId,
+      meal: {
+        userId,
+      },
+    },
+    include: {
+      meal: true,
+    },
+  });
+  if (!item) {
+    throw new Error('Item não encontrado');
+  }
+
+  const itemTotal = {
+    calories: item.calories,
+    protein: item.protein,
+    carbs: item.carbs,
+    fat: item.fat,
+    fiber: item.fiber,
+  };
+  const date = item.meal.createdAt; // Get the date of the meal
+  await prisma.$transaction(async (tx) => {
+    await tx.mealItem.delete({
+      where: {
+        id: itemId,
+      },
+    });
+    await tx.dailySummary.update({
+      where: { userId_date: { userId, date } },
+      data: {
+        calories: { decrement: itemTotal.calories },
+        protein: { decrement: itemTotal.protein },
+        carbs: { decrement: itemTotal.carbs },
+        fat: { decrement: itemTotal.fat },
+        fiber: { decrement: itemTotal.fiber },
+      },
+    });
+  }); // Update the daily summary
+  return { message: 'Item deletado com sucesso', item }; // Return the deleted item
+};
+
 export default {
   createMeal,
   getDailyMeals,
   getMealByType,
   updateMeal,
+  deleteMeal,
+  deleteItem,
 };
