@@ -174,7 +174,7 @@ export const destroyItem = async (req: Request, res: Response) => {
     if (typeof itemId !== 'string') {
       return res.status(400).json({ error: 'Id do item deve ser uma string' }); // Return a 400 status code if the itemId is not a string
     }
-    const result = await deleteItem(mealId, userId, itemId);
+    const result = await deleteItem(mealId, itemId, userId);
     return res.status(200).json(result); // Return the deleted item with a 200 status code
   } catch (error) {
     console.log(error);
