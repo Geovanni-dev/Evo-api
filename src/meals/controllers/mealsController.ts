@@ -20,15 +20,16 @@ export const store = async (req: Request, res: Response) => {
       (req.headers['x-user-id'] as string) ||
       (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
     if (!userId) {
-      return res.status(401).json({ error: ' Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
     }
     const meal = await createMeal(payload, userId);
     return res.status(201).json(meal); // Return the created meal with a 201 status code
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid request data', details: error.issues }); // Return a 400 status code with validation error details
+      return res.status(400).json({
+        error: 'Dados da solicitação inválidos',
+        details: error.issues,
+      }); // Return a 400 status code with validation error details
     } else {
       return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
     }
@@ -42,7 +43,7 @@ export const index = async (req: Request, res: Response) => {
       (req.headers['x-user-id'] as string) ||
       (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
     if (!userId) {
-      return res.status(401).json({ error: ' Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
     }
     const result = await getDailyMeals(userId, new Date()); // Call the getDailyMeals service function to retrieve the meals for the user
     return res.status(200).json(result); // Return the retrieved meals with a 200 status code

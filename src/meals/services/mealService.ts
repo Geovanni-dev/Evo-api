@@ -1,4 +1,4 @@
-import prisma from '../../prisma.js'; // Import the PrismaClient instance from the prisma.ts file
+import prisma from '../../lib/prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
 import type { CreateMealPayload } from '../schemas/mealSchemas.js'; // Import the CreateMealPayload type from the mealSchemas.ts file
 
 //============================== mealService
