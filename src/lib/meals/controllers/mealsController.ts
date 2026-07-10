@@ -71,7 +71,7 @@ export const show = async (req: Request, res: Response) => {
     }
     const { mealType } = req.params;
     if (!mealType) {
-      return res.status(400).json({ error: 'Tipo de refeição nao fornecido' }); // Return a 400 status code if the mealType is not provided
+      return res.status(400).json({ error: 'Tipo de refeição não fornecido' }); // Return a 400 status code if the mealType is not provided
     }
     if (typeof mealType !== 'string') {
       return res
