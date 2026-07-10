@@ -22,6 +22,15 @@ export const createMeal = async (
   const date = new Date(); // Use the current date and time as the default value for the date field
 
   return await prisma.$transaction(async (tx) => {
+    const tdee = await tx.userNutritionGoal.findUnique({
+      where: {
+        userId,
+      },
+    });
+    if (!tdee) {
+      throw new Error('TDEE não encontrado'); // Throw an error if the user's TDEE is not found
+    }
+    // Create the meal
     const meal = await tx.meal.create({
       data: {
         userId, // Convert the userId to a string before storing it in the database
@@ -31,14 +40,14 @@ export const createMeal = async (
       },
       include: { items: true }, // Include the related meal items in the response
     });
-
+    // Create the meal items
     await tx.mealItem.createMany({
       data: payload.items.map((item) => ({
         ...item,
         mealId: meal.id,
       })),
     });
-
+    // Update the daily summary
     await tx.dailySummary.upsert({
       where: {
         userId_date: {

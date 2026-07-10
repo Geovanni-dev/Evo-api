@@ -30,9 +30,13 @@ export const store = async (req: Request, res: Response) => {
         error: 'Dados da solicitação inválidos',
         details: error.issues,
       }); // Return a 400 status code with validation error details
-    } else {
-      return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
+    } else if (
+      error instanceof Error &&
+      error.message === 'TDEE do usuário não encontrado'
+    ) {
+      return res.status(404).json({ error: 'TDEE do usuário não encontrado' }); // Return a 404 status code if the user's TDEE is not found
     }
+    return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
   }
 };
 
