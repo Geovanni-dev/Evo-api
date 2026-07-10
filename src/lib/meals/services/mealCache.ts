@@ -1,8 +1,9 @@
-import Redis from '../../redis/client.js'; // Import the Redis client
+import redisClient from '../../redis/client.js'; // Import the Redis client
 
 const TTL = 60 * 60 * 24; // 1 day in seconds
 
 //============================= types
+
 export type MealItem = {
   id: string;
   name: string;
@@ -51,7 +52,7 @@ export const setDailyCache = async (
 ): Promise<void> => {
   const key = generateKey(userId, date); // Generate the key for the Redis cache
   const jsonData = JSON.stringify(data); // Convert the data to JSON
-  await Redis.set(key, jsonData, { EX: TTL }); // Set the meals data in the Redis cache with a TTL of 1 day
+  await redisClient.set(key, jsonData, { EX: TTL }); // Set the meals data in the Redis cache with a TTL of 1 day
 };
 
 //============================= getDailyCache
@@ -61,7 +62,7 @@ export const getDailyCache = async (
   date: Date,
 ): Promise<DailyCacheData | null> => {
   const key = generateKey(userId, date); // Generate the key for the Redis cache
-  const raw = await Redis.get(key); // Get the meals data from the Redis cache
+  const raw = await redisClient.get(key); // Get the meals data from the Redis cache
   if (!raw) {
     return null;
   }
@@ -75,7 +76,7 @@ export const deleteDailyCache = async (
   date: Date,
 ): Promise<void> => {
   const key = generateKey(userId, date); // Generate the key for the Redis cache
-  await Redis.del(key);
+  await redisClient.del(key);
 };
 
 export default {

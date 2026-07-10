@@ -1,5 +1,10 @@
 import prisma from '../../prisma/prisma.js'; // import the PrismaClient instance
 import type { NutritionGoalPayload } from '../schemas/nutritionGoalsSchemas.js'; // import the NutritionGoalPayload type
+import {
+  setNutritionGoalCache,
+  getNutritionGoalCache,
+  deleteNutritionGoalCache,
+} from './goalCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
 
 //============================== nutritionGoalService
 
@@ -29,16 +34,30 @@ export const nutritionGoal = async (
       userId,
     },
   });
+  if (result) {
+    await deleteNutritionGoalCache(userId); // Set the nutrition goal data in the Redis cache
+  }
+
   return result; // Return the created or updated nutrition goal
 };
 
 // FUNCTION FOR GET A NUTRITION GOAL
 export const getNutritionGoal = async (userId: string) => {
+  const cached = await getNutritionGoalCache(userId); // Try to get the meals data from the Redis cache
+  if (cached) {
+    return cached;
+  }
   const result = await prisma.userNutritionGoal.findUnique({
     where: {
       userId,
     },
   });
+
+  // Set the nutrition goal data in the Redis cache
+  if (result) {
+    await setNutritionGoalCache(userId, result); // Set the nutrition goal data in the Redis cache
+  }
+
   return result; // Return the nutrition goal
 };
 
