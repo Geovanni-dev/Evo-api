@@ -1,4 +1,4 @@
-import prisma from '../../lib/prisma/prisma.js'; // import the PrismaClient instance
+import prisma from '../../prisma/prisma.js'; // import the PrismaClient instance
 import type { NutritionGoalPayload } from '../schemas/nutritionGoalsSchemas.js'; // import the NutritionGoalPayload type
 
 //============================== nutritionGoalService

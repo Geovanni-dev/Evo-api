@@ -1,5 +1,6 @@
-import prisma from '../../lib/prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
+import prisma from '../../prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
 import type { CreateMealPayload } from '../schemas/mealSchemas.js'; // Import the CreateMealPayload type from the mealSchemas.ts file
+import { setDailyCache, getDailyCache, deleteDailyCache } from './mealCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
 
 //============================== mealService
 
@@ -59,7 +60,9 @@ export const createMeal = async (
       },
     });
 
-    return meal;
+    await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
+
+    return meal; // Return the created meal
   });
 };
 
@@ -69,6 +72,11 @@ export const getDailyMeals = async (userId: string, date: Date) => {
   const end = new Date(date); // Create a new Date object for the end of the day
   end.setHours(23, 59, 59, 999);
   start.setHours(0, 0, 0, 0);
+
+  const cached = await getDailyCache(userId, date); // Try to get the meals data from the Redis cache
+  if (cached) {
+    return cached; // Return the meals data from the cache
+  }
   // Query the database for meals created by the user on the specified date, including related meal items
   const meals = await prisma.meal.findMany({
     where: {
@@ -80,6 +88,7 @@ export const getDailyMeals = async (userId: string, date: Date) => {
     },
     include: { items: true }, // Include the related meal items in the response
   });
+
   // Query the database for the daily summary of the user on the specified date
   const dailySummary = await prisma.dailySummary.findUnique({
     where: {
@@ -95,11 +104,11 @@ export const getDailyMeals = async (userId: string, date: Date) => {
       userId,
     },
   });
-  /*if (!nutritionGoal) {
+  if (!nutritionGoal) {
     throw new Error('TDEE do usuário não encontrado');
-  }*/
-
-  return {
+  }
+  // Return the meals data
+  const result = {
     meals,
     totals: dailySummary || {
       calories: 0,
@@ -108,8 +117,11 @@ export const getDailyMeals = async (userId: string, date: Date) => {
       fat: 0,
       fiber: 0,
     },
-    tdee: nutritionGoal?.dailyCalorieTarget ?? null,
+    tdee: nutritionGoal?.dailyCalorieTarget || null,
   };
+  await setDailyCache(userId, date, result); // Set the meals data in the Redis cache
+
+  return result; // Return the meals data
 };
 
 // FUNCTION FOR GET MEAL BY TYPE
@@ -118,6 +130,29 @@ export const getMealByType = async (mealType: string, userId: string) => {
   const end = new Date();
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
+
+  const cached = await getDailyCache(userId, start); // Try to get the meals data from the Redis cache
+  if (cached) {
+    const mealFound = cached.meals.find((m) => m.mealType === mealType);
+    if (!mealFound) {
+      throw new Error('Refeição não encontrada');
+    }
+    const total = mealFound.items.reduce(
+      (acc, item) => ({
+        calories: acc.calories + item.calories,
+        protein: acc.protein + item.protein,
+        carbs: acc.carbs + item.carbs,
+        fat: acc.fat + item.fat,
+        fiber: acc.fiber + item.fiber,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    );
+    return {
+      meal: mealFound,
+      total,
+    };
+  }
+
   const meal = await prisma.meal.findFirst({
     where: {
       mealType,
@@ -198,7 +233,10 @@ export const updateMeal = async (
     fat: newTotal.fat - oldTotal.fat,
     fiber: newTotal.fiber - oldTotal.fiber,
   }; // Calculate the difference between the old and new totals
-  // Query the database for the meal to be updated
+
+  const date = meal.createdAt; // Use the current date and time as the default value for the date field
+
+  // Update the meal
   await prisma.$transaction(async (tx) => {
     await tx.meal.update({
       where: { id: mealId },
@@ -218,8 +256,6 @@ export const updateMeal = async (
         mealId,
       })),
     });
-    // Update the daily summary
-    const date = meal.createdAt;
 
     await tx.dailySummary.update({
       where: { userId_date: { userId, date } },
@@ -240,6 +276,8 @@ export const updateMeal = async (
     },
     include: { items: true }, // Include the related meal items in the response
   });
+
+  await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
 
   return {
     meal: updatedMeal,
@@ -304,6 +342,9 @@ export const deleteMeal = async (mealId: string, userId: string) => {
       },
     });
   });
+
+  await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
+
   return { message: 'Refeição deletada com sucesso', total }; // Return the deleted meal
 };
 
@@ -336,13 +377,16 @@ export const deleteItem = async (
     fat: item.fat,
     fiber: item.fiber,
   };
+
   const date = item.meal.createdAt; // Get the date of the meal
+
   await prisma.$transaction(async (tx) => {
     await tx.mealItem.delete({
       where: {
         id: itemId,
       },
     });
+    // Update the daily summary
     await tx.dailySummary.update({
       where: { userId_date: { userId, date } },
       data: {
@@ -353,7 +397,10 @@ export const deleteItem = async (
         fiber: { decrement: itemTotal.fiber },
       },
     });
-  }); // Update the daily summary
+  });
+
+  await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
+
   return { message: 'Item deletado com sucesso', item }; // Return the deleted item
 };
 

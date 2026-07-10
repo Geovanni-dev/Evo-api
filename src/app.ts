@@ -1,8 +1,8 @@
 import 'dotenv/config'; // loads the environment variables
 import express, { type Express } from 'express'; // loads the express framework
 import cors from 'cors'; // loads the cors middleware
-import mealsRoutes from './meals/routes/mealsRoutes.js'; // loads the meals routes
-import nutritionGoalsRoutes from './nutrition-goals/routes/nutritionGoalsRoutes.js'; // loads the nutrition goals routes
+import mealsRoutes from './lib/meals/routes/mealsRoutes.js'; // loads the meals routes
+import nutritionGoalsRoutes from './lib/nutrition-goals/routes/nutritionGoalsRoutes.js'; // loads the nutrition goals routes
 
 class Server {
   public app: Express; // definition of the app property type as express.Application
