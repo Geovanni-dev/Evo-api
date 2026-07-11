@@ -47,9 +47,3 @@ export const deleteNutritionGoalCache = async (
   const key = generateKey(userId); // Generate the key for the Redis cache
   await redisClient.del(key);
 };
-
-export default {
-  setNutritionGoalCache,
-  getNutritionGoalCache,
-  deleteNutritionGoalCache,
-};

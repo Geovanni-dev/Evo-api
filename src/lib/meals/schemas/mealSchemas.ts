@@ -17,7 +17,9 @@ const mealSchema = z.object({
   items: z.array(itemSchema).min(1), // Validate that the items is an array of itemSchema with at least one item
   date: z.coerce.date().optional(), // Validate that the date is a valid date, optional
   mealType: z
-    .enum(['cafe_da_manha', 'almoco', 'lanche', 'jantar', 'ceia', 'livre'])
+    .enum([
+      'cafe_da_manha, lanche_da_manha, almoco, pre_treino, pos_treino, lanche_da_tarde, jantar, ceia,, outros',
+    ])
     .optional(), // Validate that the mealType is one of the specified enum values
   aiRawResponse: z.unknown().optional(), // Validate that the aiRawResponse is of unknown type, optional
 });

@@ -78,9 +78,3 @@ export const deleteDailyCache = async (
   const key = generateKey(userId, date); // Generate the key for the Redis cache
   await redisClient.del(key);
 };
-
-export default {
-  setDailyCache,
-  getDailyCache,
-  deleteDailyCache,
-};

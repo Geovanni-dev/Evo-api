@@ -64,9 +64,3 @@ export const index = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
   }
 };
-
-// Export the update and index functions
-export default {
-  update,
-  index,
-};

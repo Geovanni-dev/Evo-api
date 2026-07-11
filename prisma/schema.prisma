@@ -16,12 +16,15 @@ datasource db {
 
 // Enums
 enum MealType {
-  cafe_da_manha
-  almoco
-  lanche
-  jantar
-  ceia
-  livre
+cafe_da_manha
+almoco
+lanche_da_manha
+lanche_da_tarde
+jantar
+ceia
+pre_treino
+pos_treino
+outros
 }
 
 enum MealPlanStatus {

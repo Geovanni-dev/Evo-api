@@ -116,6 +116,15 @@ export const getDailyMeals = async (userId: string, date: Date) => {
   if (!nutritionGoal) {
     throw new Error('TDEE do usuário não encontrado');
   }
+
+  // Calculate the remaining nutrients
+  const remaining = {
+    calories: nutritionGoal.dailyCalorieTarget - (dailySummary?.calories || 0),
+    protein: nutritionGoal.proteinTarget - (dailySummary?.protein || 0),
+    carbs: nutritionGoal.carbsTarget - (dailySummary?.carbs || 0),
+    fat: nutritionGoal.fatTarget - (dailySummary?.fat || 0),
+  };
+
   // Return the meals data
   const result = {
     meals,
@@ -126,8 +135,15 @@ export const getDailyMeals = async (userId: string, date: Date) => {
       fat: 0,
       fiber: 0,
     },
-    tdee: nutritionGoal?.dailyCalorieTarget || null,
+    tdee: {
+      calories: nutritionGoal.dailyCalorieTarget,
+      protein: nutritionGoal.proteinTarget,
+      carbs: nutritionGoal.carbsTarget,
+      fat: nutritionGoal.fatTarget,
+    },
+    remaining, // Return the remaining nutrients
   };
+
   await setDailyCache(userId, date, result); // Set the meals data in the Redis cache
 
   return result; // Return the meals data
@@ -411,13 +427,4 @@ export const deleteItem = async (
   await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
 
   return { message: 'Item deletado com sucesso', item }; // Return the deleted item
-};
-
-export default {
-  createMeal,
-  getDailyMeals,
-  getMealByType,
-  updateMeal,
-  deleteMeal,
-  deleteItem,
 };

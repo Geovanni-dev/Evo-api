@@ -190,12 +190,3 @@ export const destroyItem = async (req: Request, res: Response) => {
     }
   }
 };
-
-export default {
-  store,
-  index,
-  show,
-  update,
-  destroy,
-  destroyItem,
-};

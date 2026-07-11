@@ -60,8 +60,3 @@ export const getNutritionGoal = async (userId: string) => {
 
   return result; // Return the nutrition goal
 };
-
-export default {
-  nutritionGoal,
-  getNutritionGoal,
-};
