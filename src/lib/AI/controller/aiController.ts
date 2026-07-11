@@ -2,7 +2,7 @@ import type { Request, Response } from 'express'; // Import the Request and Resp
 
 //============================== aiControllers
 
-export const chat = async (req: Request, res: Response) => {
+export const storeChat = async (req: Request, res: Response) => {
   try {
     const message = req.body.message;
     if (!message) {
