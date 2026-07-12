@@ -113,17 +113,16 @@ export const getDailyMeals = async (userId: string, date: Date) => {
       userId,
     },
   });
-  if (!nutritionGoal) {
-    throw new Error('TDEE do usuário não encontrado');
-  }
-
-  // Calculate the remaining nutrients
-  const remaining = {
-    calories: nutritionGoal.dailyCalorieTarget - (dailySummary?.calories || 0),
-    protein: nutritionGoal.proteinTarget - (dailySummary?.protein || 0),
-    carbs: nutritionGoal.carbsTarget - (dailySummary?.carbs || 0),
-    fat: nutritionGoal.fatTarget - (dailySummary?.fat || 0),
-  };
+  // Calculate the remaining nutrients based on the user's nutrition goal
+  const remaining = nutritionGoal
+    ? {
+        calories:
+          nutritionGoal.dailyCalorieTarget - (dailySummary?.calories || 0),
+        protein: nutritionGoal.proteinTarget - (dailySummary?.protein || 0),
+        carbs: nutritionGoal.carbsTarget - (dailySummary?.carbs || 0),
+        fat: nutritionGoal.fatTarget - (dailySummary?.fat || 0),
+      }
+    : null;
 
   // Return the meals data
   const result = {
@@ -135,13 +134,15 @@ export const getDailyMeals = async (userId: string, date: Date) => {
       fat: 0,
       fiber: 0,
     },
-    tdee: {
-      calories: nutritionGoal.dailyCalorieTarget,
-      protein: nutritionGoal.proteinTarget,
-      carbs: nutritionGoal.carbsTarget,
-      fat: nutritionGoal.fatTarget,
-    },
-    remaining, // Return the remaining nutrients
+    tdee: nutritionGoal
+      ? {
+          calories: nutritionGoal.dailyCalorieTarget,
+          protein: nutritionGoal.proteinTarget,
+          carbs: nutritionGoal.carbsTarget,
+          fat: nutritionGoal.fatTarget,
+        }
+      : null,
+    remaining,
   };
 
   await setDailyCache(userId, date, result); // Set the meals data in the Redis cache
