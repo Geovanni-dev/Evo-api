@@ -15,6 +15,8 @@ import { z } from 'zod'; // Import the zod library for schema validation
 // FUNCTION FOR REGISTER A MEAL
 export const store = async (req: Request, res: Response) => {
   try {
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
     const payload = mealSchema.parse(req.body); // Validate the request body against the mealSchema
     const userId =
       (req.headers['x-user-id'] as string) ||
@@ -26,6 +28,7 @@ export const store = async (req: Request, res: Response) => {
     return res.status(201).json(meal); // Return the created meal with a 201 status code
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('ZodError:', JSON.stringify(error.issues, null, 2));
       return res.status(400).json({
         error: 'Dados da solicitação inválidos',
         details: error.issues,

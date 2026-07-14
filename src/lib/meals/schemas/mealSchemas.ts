@@ -10,7 +10,7 @@ const itemSchema = z.object({
   protein: z.number().min(0),
   carbs: z.number().min(0),
   fat: z.number().min(0),
-  fiber: z.number().min(0),
+  fiber: z.number().min(0).optional().default(0),
 });
 
 const mealSchema = z.object({
@@ -18,7 +18,15 @@ const mealSchema = z.object({
   date: z.coerce.date().optional(), // Validate that the date is a valid date, optional
   mealType: z
     .enum([
-      'cafe_da_manha, lanche_da_manha, almoco, pre_treino, pos_treino, lanche_da_tarde, jantar, ceia,, outros',
+      'cafe_da_manha',
+      'lanche_da_manha',
+      'almoco',
+      'pre_treino',
+      'pos_treino',
+      'lanche_da_tarde',
+      'jantar',
+      'ceia',
+      'outros',
     ])
     .optional(), // Validate that the mealType is one of the specified enum values
   aiRawResponse: z.unknown().optional(), // Validate that the aiRawResponse is of unknown type, optional
