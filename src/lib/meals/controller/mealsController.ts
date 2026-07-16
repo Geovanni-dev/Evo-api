@@ -39,6 +39,7 @@ export const store = async (req: Request, res: Response) => {
     ) {
       return res.status(404).json({ error: 'TDEE do usuário não encontrado' }); // Return a 404 status code if the user's TDEE is not found
     }
+    console.error('Erro inesperado em POST /meals:', error);
     return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
   }
 };
@@ -110,6 +111,14 @@ export const update = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
     }
     const { mealId } = req.params;
+    console.log(
+      ' PUT /meals/daily/:mealId — mealId recebido:',
+      mealId,
+      '| userId:',
+      userId,
+      '| body:',
+      req.body,
+    );
     if (!mealId) {
       return res.status(400).json({ error: 'Id da refeição nao fornecido' }); // Return a 400 status code if the mealId is not provided
     }
@@ -125,6 +134,7 @@ export const update = async (req: Request, res: Response) => {
     if (error instanceof Error && error.message === 'Refeição não encontrada') {
       return res.status(404).json({ error: 'Refeição não encontrada' }); // Return a 404 status code if the meal is not found
     } else {
+      console.error('Erro inesperado em PUT /meals:', error);
       return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
     }
   }

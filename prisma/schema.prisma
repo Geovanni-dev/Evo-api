@@ -94,7 +94,6 @@ model MealItem {
   protein  Float
   carbs    Float
   fat      Float
-  fiber    Float
 
   meal       Meal  @relation(fields: [mealId], references: [id], onDelete: Cascade)
 }
@@ -107,7 +106,6 @@ model DailySummary {
   protein  Float
   carbs    Float
   fat      Float
-  fiber    Float
   water    Float? // optional, for future use
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)

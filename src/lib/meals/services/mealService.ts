@@ -15,64 +15,65 @@ export const createMeal = async (
       protein: acc.protein + item.protein,
       carbs: acc.carbs + item.carbs,
       fat: acc.fat + item.fat,
-      fiber: acc.fiber + item.fiber,
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
   const date = new Date(); // Use the current date and time as the default value for the date field
 
-  return await prisma.$transaction(async (tx) => {
-    const tdee = await tx.userNutritionGoal.findUnique({
-      where: {
-        userId,
-      },
-    });
-    if (!tdee) {
-      throw new Error('TDEE não encontrado'); // Throw an error if the user's TDEE is not found
-    }
-    // Create the meal
-    const meal = await tx.meal.create({
-      data: {
-        userId, // Convert the userId to a string before storing it in the database
-        mealType: payload.mealType || 'livre', // Use the provided meal
-        aiRawResponse: payload.aiRawResponse || {}, // Use the provided aiRawResponse or null if not provided
-        createdAt: date, // Use the current date and time as the default value for the createdAt field
-      },
-      include: { items: true }, // Include the related meal items in the response
-    });
-    // Create the meal items
-    await tx.mealItem.createMany({
-      data: payload.items.map((item) => ({
-        ...item,
-        mealId: meal.id,
-      })),
-    });
-    // Update the daily summary
-    await tx.dailySummary.upsert({
-      where: {
-        userId_date: {
+  return await prisma.$transaction(
+    async (tx) => {
+      const tdee = await tx.userNutritionGoal.findUnique({
+        where: {
+          userId,
+        },
+      });
+      if (!tdee) {
+        throw new Error('TDEE não encontrado'); // Throw an error if the user's TDEE is not found
+      }
+      // Create the meal
+      const meal = await tx.meal.create({
+        data: {
+          userId, // Convert the userId to a string before storing it in the database
+          mealType: payload.mealType || 'livre', // Use the provided meal
+          aiRawResponse: payload.aiRawResponse || {}, // Use the provided aiRawResponse or null if not provided
+          createdAt: date, // Use the current date and time as the default value for the createdAt field
+        },
+        include: { items: true }, // Include the related meal items in the response
+      });
+      // Create the meal items
+      await tx.mealItem.createMany({
+        data: payload.items.map((item) => ({
+          ...item,
+          mealId: meal.id,
+        })),
+      });
+      // Update the daily summary
+      await tx.dailySummary.upsert({
+        where: {
+          userId_date: {
+            userId,
+            date,
+          },
+        },
+        update: {
+          calories: { increment: totais.calories },
+          protein: { increment: totais.protein },
+          carbs: { increment: totais.carbs },
+          fat: { increment: totais.fat },
+        },
+        create: {
           userId,
           date,
+          ...totais,
         },
-      },
-      update: {
-        calories: { increment: totais.calories },
-        protein: { increment: totais.protein },
-        carbs: { increment: totais.carbs },
-        fat: { increment: totais.fat },
-        fiber: { increment: totais.fiber },
-      },
-      create: {
-        userId,
-        date,
-        ...totais,
-      },
-    });
+      });
 
-    await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
+      await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
 
-    return meal; // Return the created meal
-  });
+      return meal; // Return the created meal
+    },
+    { timeout: 10000 },
+  );
 };
 
 // FUNCTION FOR GET DAILY MEALS
@@ -132,7 +133,6 @@ export const getDailyMeals = async (userId: string, date: Date) => {
       protein: 0,
       carbs: 0,
       fat: 0,
-      fiber: 0,
     },
     tdee: nutritionGoal
       ? {
@@ -169,9 +169,8 @@ export const getMealByType = async (mealType: string, userId: string) => {
         protein: acc.protein + item.protein,
         carbs: acc.carbs + item.carbs,
         fat: acc.fat + item.fat,
-        fiber: acc.fiber + item.fiber,
       }),
-      { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 },
     );
     return {
       meal: mealFound,
@@ -200,9 +199,8 @@ export const getMealByType = async (mealType: string, userId: string) => {
       protein: acc.protein + item.protein,
       carbs: acc.carbs + item.carbs,
       fat: acc.fat + item.fat,
-      fiber: acc.fiber + item.fiber,
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
 
   return {
@@ -236,9 +234,8 @@ export const updateMeal = async (
       protein: acc.protein + item.protein,
       carbs: acc.carbs + item.carbs,
       fat: acc.fat + item.fat,
-      fiber: acc.fiber + item.fiber,
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
   // Calculate the new total
   const newTotal = payload.items.reduce(
@@ -247,9 +244,8 @@ export const updateMeal = async (
       protein: acc.protein + item.protein,
       carbs: acc.carbs + item.carbs,
       fat: acc.fat + item.fat,
-      fiber: acc.fiber + item.fiber,
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
   // Calculate the difference
   const difference = {
@@ -257,43 +253,44 @@ export const updateMeal = async (
     protein: newTotal.protein - oldTotal.protein,
     carbs: newTotal.carbs - oldTotal.carbs,
     fat: newTotal.fat - oldTotal.fat,
-    fiber: newTotal.fiber - oldTotal.fiber,
   }; // Calculate the difference between the old and new totals
 
   const date = meal.createdAt; // Use the current date and time as the default value for the date field
 
   // Update the meal
-  await prisma.$transaction(async (tx) => {
-    await tx.meal.update({
-      where: { id: mealId },
-      data: {
-        mealType: payload.mealType || meal.mealType,
-      },
-    });
-    await tx.mealItem.deleteMany({
-      where: {
-        mealId,
-      },
-    });
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.meal.update({
+        where: { id: mealId },
+        data: {
+          mealType: payload.mealType || meal.mealType,
+        },
+      });
+      await tx.mealItem.deleteMany({
+        where: {
+          mealId,
+        },
+      });
 
-    await tx.mealItem.createMany({
-      data: payload.items.map((item) => ({
-        ...item,
-        mealId,
-      })),
-    });
+      await tx.mealItem.createMany({
+        data: payload.items.map((item) => ({
+          ...item,
+          mealId,
+        })),
+      });
 
-    await tx.dailySummary.update({
-      where: { userId_date: { userId, date } },
-      data: {
-        calories: { increment: difference.calories },
-        protein: { increment: difference.protein },
-        carbs: { increment: difference.carbs },
-        fat: { increment: difference.fat },
-        fiber: { increment: difference.fiber },
-      },
-    });
-  });
+      await tx.dailySummary.update({
+        where: { userId_date: { userId, date } },
+        data: {
+          calories: { increment: difference.calories },
+          protein: { increment: difference.protein },
+          carbs: { increment: difference.carbs },
+          fat: { increment: difference.fat },
+        },
+      });
+    },
+    { timeout: 10000 },
+  );
 
   const updatedMeal = await prisma.meal.findFirst({
     where: {
@@ -331,43 +328,36 @@ export const deleteMeal = async (mealId: string, userId: string) => {
       protein: acc.protein + item.protein,
       carbs: acc.carbs + item.carbs,
       fat: acc.fat + item.fat,
-      fiber: acc.fiber + item.fiber,
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
 
   const date = meal.createdAt;
 
-  await prisma.$transaction(async (tx) => {
-    await tx.mealItem.deleteMany({
-      where: {
-        mealId,
-      },
-    });
-    await tx.meal.delete({
-      where: {
-        id: mealId,
-      },
-    });
-    await tx.dailySummary.update({
-      where: { userId_date: { userId, date } },
-      data: {
-        calories: {
-          decrement: meal.items.reduce((acc, item) => acc + item.calories, 0),
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.mealItem.deleteMany({
+        where: {
+          mealId,
         },
-        protein: {
-          decrement: meal.items.reduce((acc, item) => acc + item.protein, 0),
+      });
+      await tx.meal.delete({
+        where: {
+          id: mealId,
         },
-        carbs: {
-          decrement: meal.items.reduce((acc, item) => acc + item.carbs, 0),
+      });
+      await tx.dailySummary.update({
+        where: { userId_date: { userId, date } },
+        data: {
+          calories: { decrement: total.calories },
+          protein: { decrement: total.protein },
+          carbs: { decrement: total.carbs },
+          fat: { decrement: total.fat },
         },
-        fat: { decrement: meal.items.reduce((acc, item) => acc + item.fat, 0) },
-        fiber: {
-          decrement: meal.items.reduce((acc, item) => acc + item.fiber, 0),
-        },
-      },
-    });
-  });
+      });
+    },
+    { timeout: 10000 },
+  );
 
   await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
 
@@ -401,29 +391,30 @@ export const deleteItem = async (
     protein: item.protein,
     carbs: item.carbs,
     fat: item.fat,
-    fiber: item.fiber,
   };
 
   const date = item.meal.createdAt; // Get the date of the meal
 
-  await prisma.$transaction(async (tx) => {
-    await tx.mealItem.delete({
-      where: {
-        id: itemId,
-      },
-    });
-    // Update the daily summary
-    await tx.dailySummary.update({
-      where: { userId_date: { userId, date } },
-      data: {
-        calories: { decrement: itemTotal.calories },
-        protein: { decrement: itemTotal.protein },
-        carbs: { decrement: itemTotal.carbs },
-        fat: { decrement: itemTotal.fat },
-        fiber: { decrement: itemTotal.fiber },
-      },
-    });
-  });
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.mealItem.delete({
+        where: {
+          id: itemId,
+        },
+      });
+      // Update the daily summary
+      await tx.dailySummary.update({
+        where: { userId_date: { userId, date } },
+        data: {
+          calories: { decrement: itemTotal.calories },
+          protein: { decrement: itemTotal.protein },
+          carbs: { decrement: itemTotal.carbs },
+          fat: { decrement: itemTotal.fat },
+        },
+      });
+    },
+    { timeout: 10000 },
+  );
 
   await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
 

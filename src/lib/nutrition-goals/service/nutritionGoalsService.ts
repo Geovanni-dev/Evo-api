@@ -5,6 +5,7 @@ import {
   getNutritionGoalCache,
   deleteNutritionGoalCache,
 } from './goalCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
+import { deleteDailyCache } from '../../meals/services/mealCache.js';
 
 //============================== nutritionGoalService
 
@@ -34,8 +35,10 @@ export const nutritionGoal = async (
       userId,
     },
   });
+  // Set the nutrition goal data in the Redis cache
   if (result) {
-    await deleteNutritionGoalCache(userId); // Set the nutrition goal data in the Redis cache
+    await deleteNutritionGoalCache(userId);
+    await deleteDailyCache(userId, new Date());
   }
 
   return result; // Return the created or updated nutrition goal

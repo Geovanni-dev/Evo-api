@@ -10,7 +10,6 @@ const itemSchema = z.object({
   protein: z.number().min(0),
   carbs: z.number().min(0),
   fat: z.number().min(0),
-  fiber: z.number().min(0).optional().default(0),
 });
 
 const mealSchema = z.object({
