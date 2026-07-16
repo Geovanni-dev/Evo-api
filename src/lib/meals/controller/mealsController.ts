@@ -53,7 +53,8 @@ export const index = async (req: Request, res: Response) => {
     if (!userId) {
       return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
     }
-    const result = await getDailyMeals(userId, new Date()); // Call the getDailyMeals service function to retrieve the meals for the user
+    const date = req.query.date as string | undefined; // Get the date from the request parameters
+    const result = await getDailyMeals(userId, date); // Call the getDailyMeals service function to retrieve the meals for the user
     return res.status(200).json(result); // Return the retrieved meals with a 200 status code
   } catch (error) {
     console.log(error);
@@ -86,7 +87,8 @@ export const show = async (req: Request, res: Response) => {
         .status(400)
         .json({ error: 'Tipo de refeição deve ser uma string' }); // Return a 400 status code if the mealType is not a string
     }
-    const result = await getMealByType(mealType, userId);
+    const date = req.query.date as string | undefined; // Get the date from the request parameters
+    const result = await getMealByType(mealType, userId, date);
     if (!result) {
       return res.status(404).json({ error: 'Refeição não encontrada' }); // Return a 404 status code if the meal is not found
     }
@@ -111,14 +113,6 @@ export const update = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
     }
     const { mealId } = req.params;
-    console.log(
-      ' PUT /meals/daily/:mealId — mealId recebido:',
-      mealId,
-      '| userId:',
-      userId,
-      '| body:',
-      req.body,
-    );
     if (!mealId) {
       return res.status(400).json({ error: 'Id da refeição nao fornecido' }); // Return a 400 status code if the mealId is not provided
     }

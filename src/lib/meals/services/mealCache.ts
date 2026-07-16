@@ -1,6 +1,6 @@
 import redisClient from '../../redis/client.js'; // Import the Redis client
 
-const TTL = 60 * 60 * 24; // 1 day in seconds
+const TTL = 60 * 60 * 24; // 1 day in seconds / fullback
 
 //============================= types
 

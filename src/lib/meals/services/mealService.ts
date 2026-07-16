@@ -77,7 +77,8 @@ export const createMeal = async (
 };
 
 // FUNCTION FOR GET DAILY MEALS
-export const getDailyMeals = async (userId: string, date: Date) => {
+export const getDailyMeals = async (userId: string, dateParams?: string) => {
+  const date = dateParams ? new Date(dateParams) : new Date();
   const start = new Date(date); // Create a new Date object for the start of the day
   const end = new Date(date); // Create a new Date object for the end of the day
   end.setHours(23, 59, 59, 999);
@@ -151,13 +152,18 @@ export const getDailyMeals = async (userId: string, date: Date) => {
 };
 
 // FUNCTION FOR GET MEAL BY TYPE
-export const getMealByType = async (mealType: string, userId: string) => {
+export const getMealByType = async (
+  mealType: string,
+  userId: string,
+  dateParams?: string,
+) => {
+  const date = dateParams ? new Date(dateParams) : new Date();
   const start = new Date(); // Create a new Date object for the start of the day
   const end = new Date();
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
 
-  const cached = await getDailyCache(userId, start); // Try to get the meals data from the Redis cache
+  const cached = await getDailyCache(userId, date); // Try to get the meals data from the Redis cache
   if (cached) {
     const mealFound = cached.meals.find((m) => m.mealType === mealType);
     if (!mealFound) {
