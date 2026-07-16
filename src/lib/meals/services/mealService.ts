@@ -34,7 +34,7 @@ export const createMeal = async (
       const meal = await tx.meal.create({
         data: {
           userId, // Convert the userId to a string before storing it in the database
-          mealType: payload.mealType || 'livre', // Use the provided meal
+          mealType: payload.mealType || 'outros', // Use the provided meal
           aiRawResponse: payload.aiRawResponse || {}, // Use the provided aiRawResponse or null if not provided
           createdAt: date, // Use the current date and time as the default value for the createdAt field
         },
@@ -158,8 +158,8 @@ export const getMealByType = async (
   dateParams?: string,
 ) => {
   const date = dateParams ? new Date(dateParams) : new Date();
-  const start = new Date(); // Create a new Date object for the start of the day
-  const end = new Date();
+  const start = new Date(date); // Create a new Date object for the start of the day
+  const end = new Date(date);
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
 
