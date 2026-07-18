@@ -24,7 +24,7 @@ jantar
 ceia
 pre_treino
 pos_treino
-outros
+refeicao_livre
 }
 
 enum MealPlanStatus {
@@ -73,7 +73,8 @@ model Meal {
   id            String   @id @default(uuid())
   userId        String
   createdAt     DateTime @default(now())
-  mealType      String @default("livre") // cafe_da_manha, almoco, lanche, jantar, ceia, livre
+  date          DateTime @db.Date
+  mealType      String @default("refeicao_livre") // cafe_da_manha, almoco, lanche, jantar, ceia, livre
   aiRawResponse Json // full JSON from AI (for debugging)
   aiStatus      String   @default("ok") // ok, retried, failed
 
@@ -81,6 +82,7 @@ model Meal {
   items MealItem[]
 
   @@index([userId, createdAt])
+  @@index([userId, date])
 }
 
 // ======= meal items

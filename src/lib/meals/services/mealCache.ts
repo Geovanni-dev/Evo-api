@@ -1,6 +1,6 @@
 import redisClient from '../../redis/client.js'; // Import the Redis client
 
-const TTL = 60 * 60 * 24; // 1 day in seconds / fullback
+const TTL = 60 * 60 * 12; // 12 hours in seconds / fullback
 
 //============================= types
 
@@ -13,7 +13,6 @@ export type MealItem = {
   protein: number;
   carbs: number;
   fat: number;
-  fiber: number;
 };
 
 export type CachedMeal = {
@@ -31,7 +30,6 @@ export type DailyCacheData = {
     protein: number;
     carbs: number;
     fat: number;
-    fiber: number;
   };
   tdee: number | null;
 };

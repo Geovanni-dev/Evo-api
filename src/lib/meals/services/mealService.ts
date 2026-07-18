@@ -1,5 +1,8 @@
 import prisma from '../../prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
-import type { CreateMealPayload } from '../schemas/mealSchemas.js'; // Import the CreateMealPayload type from the mealSchemas.ts file
+import type {
+  CreateMealPayload,
+  UpdateMealPayload,
+} from '../schemas/mealSchemas.js'; // Import the CreateMealPayload type from the mealSchemas.ts file
 import { setDailyCache, getDailyCache, deleteDailyCache } from './mealCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
 
 //============================== mealService
@@ -18,7 +21,34 @@ export const createMeal = async (
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
-  const date = new Date(); // Use the current date and time as the default value for the date field
+  const serverNow = new Date(); // Get the current date and time
+  const userLocalDate = payload.localDate // Check if a localDate is provided
+    ? (() => {
+        const [year, month, day] = payload.localDate.split('-').map(Number) as [
+          number,
+          number,
+          number,
+        ];
+        return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+      })()
+    : (() => {
+        const d = new Date(serverNow);
+        d.setUTCHours(0, 0, 0, 0);
+        return d;
+      })();
+
+  const serverToday = new Date(serverNow); // Get the current date
+  serverToday.setUTCHours(0, 0, 0, 0); // Set the hours, minutes, seconds, and milliseconds to 0
+
+  const diffTime = userLocalDate.getTime() - serverToday.getTime(); // Calculate the difference in time
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // Calculate the difference in days
+
+  // Check if the difference in days is less than -2 or greater than 1
+  if (diffDays < -2 || diffDays > 1) {
+    throw new Error(
+      'Data da refeição inválida. Fora da janela permitida (-2 a +1 dias).',
+    );
+  }
 
   return await prisma.$transaction(
     async (tx) => {
@@ -34,9 +64,10 @@ export const createMeal = async (
       const meal = await tx.meal.create({
         data: {
           userId, // Convert the userId to a string before storing it in the database
-          mealType: payload.mealType || 'outros', // Use the provided meal
+          mealType: payload.mealType || 'refeicao_livre', // Use the provided meal
           aiRawResponse: payload.aiRawResponse || {}, // Use the provided aiRawResponse or null if not provided
-          createdAt: date, // Use the current date and time as the default value for the createdAt field
+          createdAt: serverNow, //timestamp of creation
+          date: userLocalDate, // user local date
         },
         include: { items: true }, // Include the related meal items in the response
       });
@@ -52,7 +83,7 @@ export const createMeal = async (
         where: {
           userId_date: {
             userId,
-            date,
+            date: userLocalDate, // user local date
           },
         },
         update: {
@@ -63,13 +94,16 @@ export const createMeal = async (
         },
         create: {
           userId,
-          date,
+          date: userLocalDate,
           ...totais,
         },
       });
-
-      await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
-
+      // try for cache
+      try {
+        await deleteDailyCache(userId, userLocalDate); // Delete the meals data from the Redis cache
+      } catch (error) {
+        console.error('Erro ao deletar o cache:', error);
+      }
       return meal; // Return the created meal
     },
     { timeout: 10000 },
@@ -78,11 +112,21 @@ export const createMeal = async (
 
 // FUNCTION FOR GET DAILY MEALS
 export const getDailyMeals = async (userId: string, dateParams?: string) => {
-  const date = dateParams ? new Date(dateParams) : new Date();
-  const start = new Date(date); // Create a new Date object for the start of the day
-  const end = new Date(date); // Create a new Date object for the end of the day
-  end.setHours(23, 59, 59, 999);
-  start.setHours(0, 0, 0, 0);
+  const serverNow = new Date(); // Get the current date and time
+  const date = dateParams // Check if a date is provided
+    ? (() => {
+        const [year, month, day] = dateParams.split('-').map(Number) as [
+          number,
+          number,
+          number,
+        ];
+        return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0)); // Set the hours, minutes, seconds, and milliseconds to 0
+      })()
+    : (() => {
+        const d = new Date(serverNow);
+        d.setUTCHours(0, 0, 0, 0);
+        return d;
+      })();
 
   const cached = await getDailyCache(userId, date); // Try to get the meals data from the Redis cache
   if (cached) {
@@ -92,10 +136,7 @@ export const getDailyMeals = async (userId: string, dateParams?: string) => {
   const meals = await prisma.meal.findMany({
     where: {
       userId,
-      createdAt: {
-        gte: start,
-        lt: end,
-      },
+      date,
     },
     include: { items: true }, // Include the related meal items in the response
   });
@@ -105,7 +146,7 @@ export const getDailyMeals = async (userId: string, dateParams?: string) => {
     where: {
       userId_date: {
         userId,
-        date: start,
+        date,
       },
     },
   });
@@ -126,9 +167,16 @@ export const getDailyMeals = async (userId: string, dateParams?: string) => {
       }
     : null;
 
+  // Calculate the total calories for each meal
+  const mealsSummary = meals.map((meal) => ({
+    mealId: meal.id,
+    mealType: meal.mealType,
+    calories: meal.items.reduce((acc, item) => acc + item.calories, 0),
+  }));
   // Return the meals data
   const result = {
     meals,
+    mealsSummary,
     totals: dailySummary || {
       calories: 0,
       protein: 0,
@@ -157,12 +205,21 @@ export const getMealByType = async (
   userId: string,
   dateParams?: string,
 ) => {
-  const date = dateParams ? new Date(dateParams) : new Date();
-  const start = new Date(date); // Create a new Date object for the start of the day
-  const end = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(23, 59, 59, 999);
-
+  const serverNow = new Date(); // Get the current date and time
+  const date = dateParams // Check if a date is provided
+    ? (() => {
+        const [year, month, day] = dateParams.split('-').map(Number) as [
+          number,
+          number,
+          number,
+        ];
+        return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0)); // Set the hours, minutes, seconds, and milliseconds to 0
+      })()
+    : (() => {
+        const d = new Date(serverNow);
+        d.setUTCHours(0, 0, 0, 0);
+        return d;
+      })();
   const cached = await getDailyCache(userId, date); // Try to get the meals data from the Redis cache
   if (cached) {
     const mealFound = cached.meals.find((m) => m.mealType === mealType);
@@ -188,10 +245,7 @@ export const getMealByType = async (
     where: {
       mealType,
       userId,
-      createdAt: {
-        gte: start,
-        lt: end,
-      },
+      date,
     },
     include: { items: true }, // Include the related meal items in the response
   });
@@ -219,7 +273,7 @@ export const getMealByType = async (
 export const updateMeal = async (
   mealId: string,
   userId: string,
-  payload: CreateMealPayload,
+  payload: UpdateMealPayload,
 ) => {
   // Query the database for the meal to be updated
   const meal = await prisma.meal.findFirst({
@@ -261,7 +315,7 @@ export const updateMeal = async (
     fat: newTotal.fat - oldTotal.fat,
   }; // Calculate the difference between the old and new totals
 
-  const date = meal.createdAt; // Use the current date and time as the default value for the date field
+  const date = meal.date; // Get the date of the meal
 
   // Update the meal
   await prisma.$transaction(
@@ -305,9 +359,12 @@ export const updateMeal = async (
     },
     include: { items: true }, // Include the related meal items in the response
   });
-
-  await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
-
+  // try for cache
+  try {
+    await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
+  } catch (error) {
+    console.error('Erro ao deletar o cache:', error);
+  }
   return {
     meal: updatedMeal,
     total: newTotal,
@@ -324,7 +381,7 @@ export const deleteMeal = async (mealId: string, userId: string) => {
     include: { items: true }, // Include the related meal items in the response
   });
   if (!meal) {
-    throw new Error('Refeição nao encontrada');
+    throw new Error('Refeição não encontrada');
   }
 
   // Calculate the total
@@ -338,7 +395,7 @@ export const deleteMeal = async (mealId: string, userId: string) => {
     { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
 
-  const date = meal.createdAt;
+  const date = meal.date; // Get the date of the meal
 
   await prisma.$transaction(
     async (tx) => {
@@ -365,8 +422,12 @@ export const deleteMeal = async (mealId: string, userId: string) => {
     { timeout: 10000 },
   );
 
-  await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
-
+  // try for cache
+  try {
+    await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
+  } catch (error) {
+    console.error('Erro ao deletar o cache:', error);
+  }
   return { message: 'Refeição deletada com sucesso', total }; // Return the deleted meal
 };
 
@@ -399,7 +460,7 @@ export const deleteItem = async (
     fat: item.fat,
   };
 
-  const date = item.meal.createdAt; // Get the date of the meal
+  const date = item.meal.date; // Get the date of the meal
 
   await prisma.$transaction(
     async (tx) => {
@@ -422,7 +483,11 @@ export const deleteItem = async (
     { timeout: 10000 },
   );
 
-  await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
-
+  // try for cache
+  try {
+    await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache
+  } catch (error) {
+    console.error('Erro ao deletar o cache:', error);
+  }
   return { message: 'Item deletado com sucesso', item }; // Return the deleted item
 };

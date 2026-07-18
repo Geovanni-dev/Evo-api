@@ -12,9 +12,8 @@ const itemSchema = z.object({
   fat: z.number().min(0),
 });
 
-const mealSchema = z.object({
+export const CreateMealSchema = z.object({
   items: z.array(itemSchema).min(1), // Validate that the items is an array of itemSchema with at least one item
-  date: z.coerce.date().optional(), // Validate that the date is a valid date, optional
   mealType: z
     .enum([
       'cafe_da_manha',
@@ -25,12 +24,32 @@ const mealSchema = z.object({
       'lanche_da_tarde',
       'jantar',
       'ceia',
-      'outros',
+      'refeicao_livre',
+    ])
+    .optional(), // Validate that the mealType is one of the specified enum values
+  aiRawResponse: z.unknown().optional(), // Validate that the aiRawResponse is of unknown type, optional
+  localDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de data inválido. Use YYYY-MM-DD.'), // Validate that the localDate is in the format YYYY-MM-DD
+});
+
+export const UpdateMealSchema = z.object({
+  items: z.array(itemSchema).min(1), // Validate that the items is an array of itemSchema with at least one item
+  mealType: z
+    .enum([
+      'cafe_da_manha',
+      'lanche_da_manha',
+      'almoco',
+      'pre_treino',
+      'pos_treino',
+      'lanche_da_tarde',
+      'jantar',
+      'ceia',
+      'refeicao_livre',
     ])
     .optional(), // Validate that the mealType is one of the specified enum values
   aiRawResponse: z.unknown().optional(), // Validate that the aiRawResponse is of unknown type, optional
 });
 
-export type CreateMealPayload = z.infer<typeof mealSchema>; // Infer the TypeScript type for the mealSchema
-
-export default mealSchema; // Export the mealSchema for use in other parts of the application
+export type UpdateMealPayload = z.infer<typeof UpdateMealSchema>; // Infer the TypeScript type for the upadateMealSchema
+export type CreateMealPayload = z.infer<typeof CreateMealSchema>; // Infer the TypeScript type for the CreatedMealSchema

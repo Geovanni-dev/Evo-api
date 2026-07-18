@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'; // Import the Request and Response types from the Express library
-import mealSchema from '../schemas/mealSchemas.js'; // Import the mealSchema for validation
+import { CreateMealSchema, UpdateMealSchema } from '../schemas/mealSchemas.js'; // Import the mealSchema for validation
 import {
   createMeal,
   getDailyMeals,
@@ -17,7 +17,7 @@ export const store = async (req: Request, res: Response) => {
   try {
     console.log('Headers:', req.headers);
     console.log('Body:', req.body);
-    const payload = mealSchema.parse(req.body); // Validate the request body against the mealSchema
+    const payload = CreateMealSchema.parse(req.body); // Validate the request body against the mealSchema
     const userId =
       (req.headers['x-user-id'] as string) ||
       (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
@@ -38,8 +38,16 @@ export const store = async (req: Request, res: Response) => {
       error.message === 'TDEE do usuário não encontrado'
     ) {
       return res.status(404).json({ error: 'TDEE do usuário não encontrado' }); // Return a 404 status code if the user's TDEE is not found
+    } else if (
+      error instanceof Error &&
+      error.message ===
+        'Data da refeição inválida. Fora da janela permitida (-2 a +1 dias).'
+    ) {
+      return res.status(400).json({
+        error:
+          'Data da refeição inválida. Fora da janela permitida (-2 a +1 dias).',
+      }); // Return a 404 status code if the meal date is invalid
     }
-    console.error('Erro inesperado em POST /meals:', error);
     return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
   }
 };
@@ -76,7 +84,7 @@ export const show = async (req: Request, res: Response) => {
       (req.headers['x-user-id'] as string) ||
       (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
     if (!userId) {
-      return res.status(401).json({ error: ' Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
     }
     const { mealType } = req.params;
     if (!mealType) {
@@ -105,7 +113,7 @@ export const show = async (req: Request, res: Response) => {
 // FUNCTION FOR UPDATE A MEAL
 export const update = async (req: Request, res: Response) => {
   try {
-    const payload = mealSchema.parse(req.body); // Validate the request body against the mealSchema
+    const payload = UpdateMealSchema.parse(req.body); // Validate the request body against the mealSchema
     const userId =
       (req.headers['x-user-id'] as string) ||
       (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
@@ -125,6 +133,13 @@ export const update = async (req: Request, res: Response) => {
     return res.status(200).json(result); // Return the updated meal with a 200 status code
   } catch (error) {
     console.log(error);
+    if (error instanceof z.ZodError) {
+      console.error('ZodError:', JSON.stringify(error.issues, null, 2));
+      return res.status(400).json({
+        error: 'Dados da solicitação inválidos',
+        details: error.issues,
+      }); // Return a 400 status code with validation error details
+    }
     if (error instanceof Error && error.message === 'Refeição não encontrada') {
       return res.status(404).json({ error: 'Refeição não encontrada' }); // Return a 404 status code if the meal is not found
     } else {
