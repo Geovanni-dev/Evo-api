@@ -275,51 +275,57 @@ export const updateMeal = async (
   userId: string,
   payload: UpdateMealPayload,
 ) => {
-  // Query the database for the meal to be updated
-  const meal = await prisma.meal.findFirst({
-    where: {
-      id: mealId,
-      userId,
-    },
-    include: { items: true }, // Include the related meal items in the response
-  });
-
-  if (!meal) {
-    throw new Error('Refeição não encontrada');
-  }
-  // Calculate the difference between the old and new totals
-  const oldTotal = meal.items.reduce(
-    (acc, item) => ({
-      calories: acc.calories + item.calories,
-      protein: acc.protein + item.protein,
-      carbs: acc.carbs + item.carbs,
-      fat: acc.fat + item.fat,
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
-  // Calculate the new total
-  const newTotal = payload.items.reduce(
-    (acc, item) => ({
-      calories: acc.calories + item.calories,
-      protein: acc.protein + item.protein,
-      carbs: acc.carbs + item.carbs,
-      fat: acc.fat + item.fat,
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
-  // Calculate the difference
-  const difference = {
-    calories: newTotal.calories - oldTotal.calories,
-    protein: newTotal.protein - oldTotal.protein,
-    carbs: newTotal.carbs - oldTotal.carbs,
-    fat: newTotal.fat - oldTotal.fat,
-  }; // Calculate the difference between the old and new totals
-
-  const date = meal.date; // Get the date of the meal
-
-  // Update the meal
-  await prisma.$transaction(
+  const { updatedMeal, newTotal, date } = await prisma.$transaction(
     async (tx) => {
+      const locked = await tx.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "Meal" WHERE id = ${mealId} AND "userId" = ${userId} FOR UPDATE
+  `;
+      if (locked.length === 0) {
+        throw new Error('Refeição não encontrada');
+      }
+
+      // Query the database for the meal to be updated
+      const meal = await tx.meal.findFirst({
+        where: {
+          id: mealId,
+          userId,
+        },
+        include: { items: true }, // Include the related meal items in the response
+      });
+
+      if (!meal) {
+        throw new Error('Refeição não encontrada');
+      }
+      // Calculate the difference between the old and new totals
+      const oldTotal = meal.items.reduce(
+        (acc, item) => ({
+          calories: acc.calories + item.calories,
+          protein: acc.protein + item.protein,
+          carbs: acc.carbs + item.carbs,
+          fat: acc.fat + item.fat,
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
+      );
+      // Calculate the new total
+      const newTotal = payload.items.reduce(
+        (acc, item) => ({
+          calories: acc.calories + item.calories,
+          protein: acc.protein + item.protein,
+          carbs: acc.carbs + item.carbs,
+          fat: acc.fat + item.fat,
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
+      );
+      // Calculate the difference
+      const difference = {
+        calories: newTotal.calories - oldTotal.calories,
+        protein: newTotal.protein - oldTotal.protein,
+        carbs: newTotal.carbs - oldTotal.carbs,
+        fat: newTotal.fat - oldTotal.fat,
+      }; // Calculate the difference between the old and new totals
+
+      const date = meal.date; // Get the date of the meal
+
       await tx.meal.update({
         where: { id: mealId },
         data: {
@@ -348,17 +354,20 @@ export const updateMeal = async (
           fat: { increment: difference.fat },
         },
       });
+
+      const updatedMeal = await tx.meal.findFirst({
+        where: {
+          id: mealId,
+          userId,
+        },
+        include: { items: true }, // Include the related meal items in the response
+      });
+
+      return { updatedMeal, newTotal, date }; // Return the updated meal
     },
-    { timeout: 10000 },
+    { timeout: 10000 }, // Set the transaction timeout to 10 seconds
   );
 
-  const updatedMeal = await prisma.meal.findFirst({
-    where: {
-      id: mealId,
-      userId,
-    },
-    include: { items: true }, // Include the related meal items in the response
-  });
   // try for cache
   try {
     await deleteDailyCache(userId, date); // Delete the meals data from the Redis cache

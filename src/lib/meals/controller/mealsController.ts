@@ -27,6 +27,7 @@ export const store = async (req: Request, res: Response) => {
     const meal = await createMeal(payload, userId);
     return res.status(201).json(meal); // Return the created meal with a 201 status code
   } catch (error) {
+    console.error('ERRO NO POST /meals:', error);
     if (error instanceof z.ZodError) {
       console.error('ZodError:', JSON.stringify(error.issues, null, 2));
       return res.status(400).json({
