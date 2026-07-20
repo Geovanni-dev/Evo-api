@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'; // Import the GoogleGenerativeAI class from the @google/generative-ai package
+import { GoogleGenAI } from '@google/genai'; // Import the GoogleGenerativeAI class from the @google/generative-ai package
 
 import { SYSTEM_PROMPT } from '../prompts/systemPrompt.js'; // Import the SYSTEM_PROMPT constant
 
@@ -87,10 +87,11 @@ export const chatWithAI = async (params: {
   if (!apiKey) {
     throw new Error('Chave de API do Gemini não fornecida no .env');
   }
-  const genAI = new GoogleGenerativeAI(apiKey); // Create a new instance of the GoogleGenerativeAI class
-  const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' }); // Get the "gemini-1.5-flash" model
-
-  const result = await model.generateContent(fullPrompt); // Generate content
-  const response = result.response.text();
-  return response; // Return the generated response
+  const genAI = new GoogleGenAI({ apiKey }); // Create a new instance of the GoogleGenAI class
+  // generate the response
+  const response = await genAI.models.generateContent({
+    model: 'gemini-3.1-flash-lite',
+    contents: fullPrompt,
+  });
+  return response.text;
 };
