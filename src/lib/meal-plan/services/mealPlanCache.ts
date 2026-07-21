@@ -1,23 +1,23 @@
 import redisClient from '../../redis/client.js'; // Import the Redis client
 
-const TTL = 60 * 60 * 24 * 1; // 1 day in seconds
+const TTL = 60 * 60 * 24 * 7; // 7 days in seconds
 
 //============================= types
 
-type MealPlanCacheDate = {
+export type MealPlanCacheDate = {
   id: string;
   userId: string;
   planJson: Record<string, unknown>;
-  status: string;
+  status: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
 
 //=====================generateKey
 
-const generateKey = (userId: string): string => `mealPlan:${userId}`; // Return the generated key
+const generateKey = (userId: string): string => `mealPlan:${userId}`;
 
-//=====================setDailyCache
+//=====================setMealPlanCache
 
 export const setMealPlanCache = async (
   userId: string,
@@ -25,10 +25,10 @@ export const setMealPlanCache = async (
 ): Promise<void> => {
   const key = generateKey(userId); // Generate the key for the Redis cache
   const jsonData = JSON.stringify(data); // Convert the data to JSON
-  await redisClient.set(key, jsonData, { EX: TTL }); // Set the meals data in the Redis cache with a TTL of 1 day
+  await redisClient.set(key, jsonData, { EX: TTL }); // Set the meals data in the Redis cache with a TTL of 7 days
 };
 
-//=====================getDailyCache
+//=====================getMealPlanCache
 
 export const getMealPlanCache = async (
   userId: string,
@@ -41,7 +41,7 @@ export const getMealPlanCache = async (
   return JSON.parse(raw); // Parse the JSON data and return it
 };
 
-//=====================deleteDailyCache
+//=====================deleteMealPlanCache
 
 export const deleteMealPlanCache = async (userId: string): Promise<void> => {
   const key = generateKey(userId); // Generate the key for the Redis cache

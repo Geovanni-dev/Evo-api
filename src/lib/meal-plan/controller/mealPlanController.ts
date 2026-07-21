@@ -1,0 +1,54 @@
+import type { Request, Response } from 'express'; // Import the Request and Response types from the Express library
+import { z } from 'zod'; // Import the zod library for schema validation
+import {
+  getActiveMealPlan,
+  updateActiveMealPlan,
+} from '../services/mealPlanService.js'; // Import the getMealPlan service function
+import { MealPlanRequestSchema } from '../schemas/mealPlanSchema.js'; // Import the mealPlanSchema for validation
+
+//=============================mealplanController
+
+// FUNCTION FOR GET ACTIVE MEAL PLAN
+export const indexMealPlan = async (req: Request, res: Response) => {
+  try {
+    // Get the user ID from the request
+    const userId =
+      (req.headers['x-user-id'] as string) ||
+      (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
+    if (!userId) {
+      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+    }
+    // Get the meal plan from the database
+    const result = await getActiveMealPlan(userId);
+    return res.status(200).json(result); // Return the preferences with a 200 status code
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
+  }
+};
+
+//FUNCTION FOR UPDATE/CREATE A MEAL PLAN
+export const updateMealPlan = async (req: Request, res: Response) => {
+  try {
+    const payload = MealPlanRequestSchema.parse(req.body); // Validate the request body against the mealPlanSchema
+    const userId =
+      (req.headers['x-user-id'] as string) ||
+      (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
+    if (!userId) {
+      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+    }
+    const result = await updateActiveMealPlan(userId, payload); // Update the meal plan in the database
+    return res.status(200).json(result); // Return the preferences with a 200 status code
+  } catch (error) {
+    console.log(error);
+    if (error instanceof z.ZodError) {
+      console.error('ZodError:', JSON.stringify(error.issues, null, 2));
+      return res.status(400).json({
+        error: 'Dados da solicitação inválidos',
+        details: error.issues,
+      }); // Return a 400 status code with validation error details
+    } else {
+      return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
+    }
+  }
+};

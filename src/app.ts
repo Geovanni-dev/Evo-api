@@ -5,6 +5,7 @@ import mealsRoutes from './lib/meals/routes/mealsRoutes.js'; // loads the meals 
 import nutritionGoalsRoutes from './lib/nutrition-goals/routes/nutritionGoalsRoutes.js'; // loads the nutrition goals routes
 import iaRoutes from './lib/AI/routes/aiRoutes.js'; // loads the AI routes
 import userPreferences from './lib/user-preferences/routes/preferencesRoutes.js'; // loads the user preferences routes
+import userMealPlan from './lib/meal-plan/routes/mealPlanRoutes.js'; // loads the user meal plan routes
 
 class Server {
   public app: Express; // definition of the app property type as express.Application
@@ -27,7 +28,8 @@ class Server {
     this.app.use('/meals', mealsRoutes); // routes for meals
     this.app.use('/TDEE', nutritionGoalsRoutes); //routes for nutrition goals
     this.app.use('/ai', iaRoutes); // routes for AI
-    this.app.use('/user', userPreferences); // routes for user preferences
+    this.app.use('/preferences', userPreferences); // routes for user preferences
+    this.app.use('/meal-plan', userMealPlan); // routes for user meal plan
     this.app.get('/', (_req, res) => {
       res.send('Servidor rodando com sucesso!');
     });
