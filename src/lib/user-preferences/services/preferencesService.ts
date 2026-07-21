@@ -59,7 +59,7 @@ export const getPreferences = async (userId: string) => {
 };
 
 // FUNCTION FOR UPDATE/CREATE USER PREFERENCES
-export const updatePreference = async (
+export const updatePreferences = async (
   userId: string,
   payload: PreferencePayload,
 ) => {
@@ -106,22 +106,14 @@ export const getRestrictions = async (userId: string) => {
   });
   if (!record) return null; // Return null if the record is not found
 
-  const restrictions = record.restrictions as RestrictionsCacheData;
-
-  const raw = {
-    intolerances: restrictions.intolerances,
-    allergies: restrictions.allergies,
-    healthConditions: restrictions.healthConditions,
-    observations: restrictions.observations,
-  };
-  const data = filterUndefined(raw as RestrictionsCacheData);
+  const data = filterUndefined(record.restrictions as RestrictionsCacheData); // Filter out undefined values
 
   await setRestrictionsCache(userId, data); // Set the restrictions data in the Redis cache
   return data;
 };
 
 // FUNCTION FOR UPDATE/CREATE USER RESTRICTIONS
-export const updateRestriction = async (
+export const updateRestrictions = async (
   userId: string,
   payload: RestrictionPayload,
 ) => {

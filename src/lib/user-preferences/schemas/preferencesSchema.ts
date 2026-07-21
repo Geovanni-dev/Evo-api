@@ -20,5 +20,3 @@ export const RestrictionSchema = z.object({
 
 export type PreferencePayload = z.infer<typeof PreferenceSchema>; // Infer the TypeScript type for the PreferenceSchema
 export type RestrictionPayload = z.infer<typeof RestrictionSchema>; // Infer the TypeScript type for the RestrictionSchema
-
-export default PreferenceSchema; // Export the PreferenceSchema
