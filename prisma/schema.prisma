@@ -16,15 +16,15 @@ datasource db {
 
 // Enums
 enum MealType {
-cafe_da_manha
-almoco
-lanche_da_manha
-lanche_da_tarde
-jantar
-ceia
-pre_treino
-pos_treino
-refeicao_livre
+  cafe_da_manha
+  almoco
+  lanche_da_manha
+  lanche_da_tarde
+  jantar
+  ceia
+  pre_treino
+  pos_treino
+  refeicao_livre
 }
 
 enum MealPlanStatus {
@@ -45,13 +45,14 @@ model User {
   password  String? // nullable because we will use OAuth for authentication
   createdAt DateTime @default(now())
 
-  authProviders  AuthProvider[]
-  meals          Meal[]
-  dailySummaries DailySummary[]
-  nutritionGoal  UserNutritionGoal?
-  weights        WeightHistory[]
-  waterLogs      WaterLog[]
-  mealPlans      MealPlan[]
+  authProviders   AuthProvider[]
+  meals           Meal[]
+  dailySummaries  DailySummary[]
+  nutritionGoal   UserNutritionGoal?
+  weights         WeightHistory[]
+  waterLogs       WaterLog[]
+  mealPlans       MealPlan[]
+  userPreferences UserPreferences?
 }
 
 // ========= auth providers (google, apple, etc.)
@@ -62,7 +63,7 @@ model AuthProvider {
   providerUserId String //id user in the provider
   createdAt      DateTime         @default(now())
 
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerUserId])
   @@unique([userId, provider])
@@ -74,11 +75,11 @@ model Meal {
   userId        String
   createdAt     DateTime @default(now())
   date          DateTime @db.Date
-  mealType      String @default("refeicao_livre") // cafe_da_manha, almoco, lanche, jantar, ceia, livre
+  mealType      String   @default("refeicao_livre") // cafe_da_manha, almoco, lanche, jantar, ceia, livre
   aiRawResponse Json // full JSON from AI (for debugging)
   aiStatus      String   @default("ok") // ok, retried, failed
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items MealItem[]
 
   @@index([userId, createdAt])
@@ -97,7 +98,7 @@ model MealItem {
   carbs    Float
   fat      Float
 
-  meal       Meal  @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
 }
 
 // ======== Daily summary
@@ -110,7 +111,7 @@ model DailySummary {
   fat      Float
   water    Float? // optional, for future use
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date]) // one summary per day
   @@index([userId, date])
@@ -127,7 +128,7 @@ model UserNutritionGoal {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ====== weight history
@@ -137,7 +138,7 @@ model WeightHistory {
   weight Float
   date   DateTime @db.Date
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@index([userId, date])
@@ -150,7 +151,7 @@ model WaterLog {
   amountMl Float
   date     DateTime @db.Date
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
 }
@@ -164,7 +165,19 @@ model MealPlan {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+}
+
+// ============ user preferences
+model UserPreferences {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  preferences  Json? // { dietType: "vegetarian", exclude: ["fish"], ... }
+  restrictions Json? // { glutenFree: true, lactoseFree: false, ... }
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

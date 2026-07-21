@@ -1,13 +1,13 @@
 import redisClient from '../../redis/client.js'; // Import the Redis client
 
-const TTL = 60 * 60 * 24 * 7; // 1 week in seconds
+const TTL = 60 * 60 * 24 * 1; // 1 day in seconds
 
 //============================= types
 
-type mealPlanCacheDate = {
+type MealPlanCacheDate = {
   id: string;
   userId: string;
-  PlanJson: Record<string, unknown>;
+  planJson: Record<string, unknown>;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -21,7 +21,7 @@ const generateKey = (userId: string): string => `mealPlan:${userId}`; // Return 
 
 export const setMealPlanCache = async (
   userId: string,
-  data: mealPlanCacheDate,
+  data: MealPlanCacheDate,
 ): Promise<void> => {
   const key = generateKey(userId); // Generate the key for the Redis cache
   const jsonData = JSON.stringify(data); // Convert the data to JSON
@@ -32,7 +32,7 @@ export const setMealPlanCache = async (
 
 export const getMealPlanCache = async (
   userId: string,
-): Promise<mealPlanCacheDate | null> => {
+): Promise<MealPlanCacheDate | null> => {
   const key = generateKey(userId); // Generate the key for the Redis cache
   const raw = await redisClient.get(key); // Get the mealPlan data from the Redis cache
   if (!raw) {
