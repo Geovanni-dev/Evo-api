@@ -9,9 +9,9 @@ import {
 
 const router = Routes.Router(); // Create a new instance of the Routes class
 
-router.get('/preferences', indexPref); // Define a GET route for retrieving all preferences, protected by authentication middleware
+router.get('/', indexPref); // Define a GET route for retrieving all preferences, protected by authentication middleware
 
-router.patch('/preferences', updatePref); // Define a PATCH route for updating a preference, protected by authentication middleware
+router.patch('/', updatePref); // Define a PATCH route for updating a preference, protected by authentication middleware
 
 router.get('/restrictions', indexRest); // Define a GET route for retrieving all restrictions, protected by authentication middleware
 
