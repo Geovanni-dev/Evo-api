@@ -11,18 +11,24 @@ const DAYS = [
   'sunday',
 ] as const;
 
-// Meal types
-const MEALS = ['cafe_da_manha', 'almoco', 'lanche_da_tarde', 'jantar'] as const;
+const foodItemSchema = z.object({
+  name: z.string().min(1, 'Nome do alimento é obrigatório'),
+  quantity: z.number().positive('Quantidade deve ser maior que zero'),
+  unit: z.string().min(1, 'Unidade é obrigatória'), // "g", "ml", "unidade", "colher de sopa", etc.
+});
 
-// Validate a single meal with at least one food
-const mealSchema = z.array(z.string().min(1, 'Food name cannot be empty'));
+// validate one meal
+const mealSchema = z.object({
+  mealType: z.string().min(1, 'Tipo de refeição é obrigatório'),
+  items: z
+    .array(foodItemSchema)
+    .min(1, 'Refeição deve ter pelo menos um alimento'),
+});
 
 // validate one day
-export const daySchema = z.object(
-  Object.fromEntries(MEALS.map((meal) => [meal, mealSchema])) as {
-    [K in (typeof MEALS)[number]]: typeof mealSchema;
-  },
-);
+const daySchema = z.object({
+  meals: z.array(mealSchema).min(4).max(6),
+});
 
 // Validate the full weekly diet
 export const MealPlanSchema = z.object(
@@ -30,7 +36,6 @@ export const MealPlanSchema = z.object(
     [K in (typeof DAYS)[number]]: typeof daySchema;
   },
 );
-
 // TypeScript type for just the diet skeleton
 export type MealPlanPayload = z.infer<typeof MealPlanSchema>;
 

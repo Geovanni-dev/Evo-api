@@ -5,6 +5,7 @@ import { z } from 'zod'; // Import the zod library for schema validation
 // Define a schema for user preferences
 export const PreferenceSchema = z.object({
   dietType: z.string().optional(),
+  mealsPerDay: z.number().int().min(4).max(6).default(4),
   likedFoods: z.array(z.string()).optional(),
   dislikedFoods: z.array(z.string()).optional(),
   avoidFoods: z.array(z.string()).optional(),

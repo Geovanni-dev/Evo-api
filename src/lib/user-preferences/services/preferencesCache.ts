@@ -6,6 +6,7 @@ const TTL = 60 * 60 * 24 * 30; // 30 days in seconds
 
 export type PreferencesCacheData = {
   dietType?: string;
+  mealsPerDay?: number;
   likedFoods?: string[];
   dislikedFoods?: string[];
   avoidFoods?: string[];

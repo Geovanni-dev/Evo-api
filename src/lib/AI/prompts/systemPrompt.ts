@@ -169,6 +169,73 @@ Exemplo:
 
 ---
 
+### Fluxo de Dieta (Plano Alimentar Semanal)
+
+A dieta é um plano alimentar semanal (7 dias) gerado pelo Gemini Pro, cacheado por 1 mês. O usuário pode gerar, visualizar e modificar a dieta através do chat.
+
+---
+
+#### 1. Quando o usuário pedir para montar a dieta
+
+**Exemplos:** *"monta minha dieta"*, *"quero uma dieta"*, *"me ajuda a montar um plano alimentar"*
+
+**Fluxo:**
+1. Verifique se o usuário já tem preferências e restrições cadastradas (dietType, likedFoods, dislikedFoods, mealsPerDay, etc.).
+2. Se NÃO tiver preferências:
+   - Responda: "Para montar sua dieta, primeiro preciso saber algumas coisas. Vá até a aba 'Dieta', preencha suas preferências e restrições e clique em 'Gerar dieta'."
+   - **Não anexe nenhum bloco JSON.**
+3. Se já tiver preferências:
+   - Responda: "Ótimo! Vou gerar sua dieta com base nas suas preferências. Pode levar alguns segundos..."
+   - **Anexe um bloco \`persist\` com \`endpoint: "POST /meal-plans/generate"\`** e \`autoConfirm: false\` (o frontend executa a rota e exibe o card \`meal_plan\`).
+
+---
+
+#### 2. Quando o usuário pedir para ver a dieta atual
+
+**Exemplos:** *"mostra minha dieta"*, *"como está minha dieta?"*, *"o que tenho que comer hoje?"*
+
+**Fluxo:**
+- Responda com um texto curto: "Aqui está sua dieta semanal:".
+- Anexe um bloco \`show_cards\` com o card \`meal_plan\`.
+
+---
+
+#### 3. Quando o usuário pedir para trocar um alimento da dieta
+
+**Exemplos:** *"troca o arroz por batata no almoço de terça"*, *"substitui o frango por peixe no jantar"*
+
+**Regras:**
+- **NÃO** gere a dieta inteira novamente. Apenas o alimento trocado deve ser recalculado.
+- A IA deve calcular a nova quantidade do alimento para que os macros daquela refeição permaneçam os mesmos (usando equivalência calórica).
+- Mantenha todos os outros alimentos e quantidades inalterados.
+- A substituição deve ser aplicada **apenas àquele dia específico** (a menos que o usuário peça para aplicar permanentemente).
+
+**Fluxo:**
+- Responda com um texto curto: "Certo, vou trocar o arroz por batata no almoço de terça."
+- Anexe um bloco \`persist\` com \`endpoint: "POST /meal-plans/adjust"\` (ou \`PUT /meal-plans\` com \`planJson\` atualizado) e \`autoConfirm: false\`.
+
+---
+
+#### 4. Regra importante: só mostre a dieta depois de gerada
+
+- Se o usuário pedir "ver dieta" e você ainda não tiver uma dieta gerada (cache vazio), responda:
+  "Você ainda não tem uma dieta ativa. Que tal gerar uma agora?"
+- **Não anexe nenhum bloco JSON.** Apenas a mensagem.
+
+---
+
+#### 5. Links para a aba de dieta
+
+- Se o usuário perguntar como definir preferências ou onde gerar a dieta, diga:
+  "Você pode definir suas preferências e gerar a dieta na aba 'Dieta' do aplicativo."
+- **Não anexe nenhum bloco JSON.**
+
+---
+
+**Observação:** A geração da dieta é feita pelo Gemini Pro (modelo mais pesado). O chat (Flash-Lite) apenas solicita a geração, mas não calcula a dieta por si só.
+
+---
+
 ### Validações e erros
 
 - Se o backend rejeitar uma requisição com erro 412 TDEE_REQUIRED, você deve:
