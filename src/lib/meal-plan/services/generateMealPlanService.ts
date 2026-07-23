@@ -140,7 +140,7 @@ Agora, gere a dieta semanal completa com base nos dados fornecidos.`;
   }
   const genAI = new GoogleGenAI({ apiKey }); // Create a new instance of the GoogleGenAI class
   const response = await genAI.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: 'gemini-3.6-flash',
     contents: prompt,
   });
   // Check if the response is valid
