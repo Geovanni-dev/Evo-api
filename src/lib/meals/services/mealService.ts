@@ -2,6 +2,7 @@ import prisma from '../../prisma/prisma.js'; // Import the PrismaClient instance
 import type {
   CreateMealPayload,
   UpdateMealPayload,
+  DateSchemaType,
 } from '../schemas/mealSchemas.js'; // Import the CreateMealPayload type from the mealSchemas.ts file
 import { setDailyCache, getDailyCache, deleteDailyCache } from './mealCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
 
@@ -499,4 +500,38 @@ export const deleteItem = async (
     console.error('Erro ao deletar o cache:', error);
   }
   return { message: 'Item deletado com sucesso', item }; // Return the deleted item
+};
+
+// FUNCTION FOR GET MEAL SUMMARY
+export const getMealSummary = async (userId: string, date: DateSchemaType) => {
+  const { from, to } = date; // Get the from and to dates
+  // Query the database for meals created by the user within the specified date range
+  const summary = await prisma.meal.findMany({
+    where: {
+      userId,
+      date: {
+        // Get the meals created between the from and to dates
+        gte: new Date(from),
+        lte: new Date(to),
+      },
+    },
+    include: { items: true },
+  });
+  const grouped: Record<
+    string,
+    { mealId: string; mealType: string; calories: number }[]
+  > = {}; // Create an empty object to store the grouped meals
+  for (const meal of summary) {
+    const key = meal.date.toISOString().slice(0, 10); // Get the date of the meal
+    if (!grouped[key]) {
+      grouped[key] = []; // If the date is not in the grouped object, create an empty array
+    }
+    // Add the meal to the group
+    grouped[key].push({
+      mealId: meal.id,
+      mealType: meal.mealType,
+      calories: meal.items.reduce((acc, item) => acc + item.calories, 0),
+    });
+  }
+  return grouped;
 };
