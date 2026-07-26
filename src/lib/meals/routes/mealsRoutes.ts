@@ -6,11 +6,14 @@ import {
   update,
   destroy,
   destroyItem,
+  indexMealSummary,
 } from '../controller/mealsController.js';
 
 const router = Router(); // Create a new instance of the Router class
 
 router.post('/', store); // Define a POST route for creating a meal, protected by authentication middleware
+
+router.get('/summary', indexMealSummary); // Define a GET route for retrieving a meal summary, protected by authentication middleware
 
 router.get('/daily', index); // Define a GET route for retrieving all meals, protected by authentication middleware
 

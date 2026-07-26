@@ -7,6 +7,8 @@ import iaRoutes from './lib/AI/routes/aiRoutes.js'; // loads the AI routes
 import userPreferences from './lib/user-preferences/routes/preferencesRoutes.js'; // loads the user preferences routes
 import userMealPlan from './lib/meal-plan/routes/mealPlanRoutes.js'; // loads the user meal plan routes
 
+//============================== Server
+
 class Server {
   public app: Express; // definition of the app property type as express.Application
 

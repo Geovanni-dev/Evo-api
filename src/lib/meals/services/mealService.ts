@@ -5,15 +5,17 @@ import type {
   DateSchemaType,
 } from '../schemas/mealSchemas.js'; // Import the CreateMealPayload type from the mealSchemas.ts file
 import { setDailyCache, getDailyCache, deleteDailyCache } from './mealCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
+import type { MealItem } from '../services/mealCache.js';
 
-//============================== mealService
+//==================== types
 
-// FUNCTION FOR CREATE A MEAL
-export const createMeal = async (
-  payload: CreateMealPayload,
-  userId: string,
-) => {
-  const totais = payload.items.reduce(
+type MacroItem = Pick<MealItem, 'calories' | 'protein' | 'carbs' | 'fat'>; // filter the macro items from table MealItem
+
+//=========================== auxiliary function
+
+// FUNCTION FOR SUM MACROS
+const somaMacros = (items: MacroItem[]) => {
+  const totais = items.reduce(
     (acc, item) => ({
       calories: acc.calories + item.calories,
       protein: acc.protein + item.protein,
@@ -22,6 +24,18 @@ export const createMeal = async (
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
+  return totais;
+};
+
+//============================== mealService
+
+// FUNCTION FOR CREATE A MEAL
+export const createMeal = async (
+  payload: CreateMealPayload,
+  userId: string,
+) => {
+  const totais = somaMacros(payload.items); // Calculate the total calories, protein, carbs, and fat
+
   const serverNow = new Date(); // Get the current date and time
   const userLocalDate = payload.localDate // Check if a localDate is provided
     ? (() => {
@@ -227,15 +241,8 @@ export const getMealByType = async (
     if (!mealFound) {
       throw new Error('Refeição não encontrada');
     }
-    const total = mealFound.items.reduce(
-      (acc, item) => ({
-        calories: acc.calories + item.calories,
-        protein: acc.protein + item.protein,
-        carbs: acc.carbs + item.carbs,
-        fat: acc.fat + item.fat,
-      }),
-      { calories: 0, protein: 0, carbs: 0, fat: 0 },
-    );
+    const total = somaMacros(mealFound.items); //' Calculate the total
+
     return {
       meal: mealFound,
       total,
@@ -254,15 +261,7 @@ export const getMealByType = async (
   if (!meal) {
     throw new Error('Refeição não encontrada');
   }
-  const total = meal.items.reduce(
-    (acc, item) => ({
-      calories: acc.calories + item.calories,
-      protein: acc.protein + item.protein,
-      carbs: acc.carbs + item.carbs,
-      fat: acc.fat + item.fat,
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
+  const total = somaMacros(meal.items); // Calculate the total
 
   return {
     meal,
@@ -298,25 +297,9 @@ export const updateMeal = async (
         throw new Error('Refeição não encontrada');
       }
       // Calculate the difference between the old and new totals
-      const oldTotal = meal.items.reduce(
-        (acc, item) => ({
-          calories: acc.calories + item.calories,
-          protein: acc.protein + item.protein,
-          carbs: acc.carbs + item.carbs,
-          fat: acc.fat + item.fat,
-        }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 },
-      );
+      const oldTotal = somaMacros(meal.items);
       // Calculate the new total
-      const newTotal = payload.items.reduce(
-        (acc, item) => ({
-          calories: acc.calories + item.calories,
-          protein: acc.protein + item.protein,
-          carbs: acc.carbs + item.carbs,
-          fat: acc.fat + item.fat,
-        }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 },
-      );
+      const newTotal = somaMacros(payload.items);
       // Calculate the difference
       const difference = {
         calories: newTotal.calories - oldTotal.calories,
@@ -395,15 +378,7 @@ export const deleteMeal = async (mealId: string, userId: string) => {
   }
 
   // Calculate the total
-  const total = meal.items.reduce(
-    (acc, item) => ({
-      calories: acc.calories + item.calories,
-      protein: acc.protein + item.protein,
-      carbs: acc.carbs + item.carbs,
-      fat: acc.fat + item.fat,
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
+  const total = somaMacros(meal.items);
 
   const date = meal.date; // Get the date of the meal
 
