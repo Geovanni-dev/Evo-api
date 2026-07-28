@@ -27,7 +27,107 @@ type Context = {
       fat: number;
     }[];
   }[];
-
+  mealPlan: {
+    monday: {
+      meals: {
+        mealType: string;
+        items: {
+          name: string;
+          quantity: number;
+          unit: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+        }[];
+      }[];
+    };
+    tuesday: {
+      meals: {
+        mealType: string;
+        items: {
+          name: string;
+          quantity: number;
+          unit: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+        }[];
+      }[];
+    };
+    wednesday: {
+      meals: {
+        mealType: string;
+        items: {
+          name: string;
+          quantity: number;
+          unit: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+        }[];
+      }[];
+    };
+    thursday: {
+      meals: {
+        mealType: string;
+        items: {
+          name: string;
+          quantity: number;
+          unit: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+        }[];
+      }[];
+    };
+    friday: {
+      meals: {
+        mealType: string;
+        items: {
+          name: string;
+          quantity: number;
+          unit: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+        }[];
+      }[];
+    };
+    saturday: {
+      meals: {
+        mealType: string;
+        items: {
+          name: string;
+          quantity: number;
+          unit: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+        }[];
+      }[];
+    };
+    sunday: {
+      meals: {
+        mealType: string;
+        items: {
+          name: string;
+          quantity: number;
+          unit: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+        }[];
+      }[];
+    };
+  } | null;
+  todayKey: string;
   remaining: { calories: number; protein: number; carbs: number; fat: number };
 } | null;
 
@@ -60,6 +160,24 @@ export const chatWithAI = async (params: {
           })
           .join('\n')
       : 'Nenhuma refeição registrada hoje.';
+
+  // function to display the plan
+  const planMealsText = params.context?.mealPlan
+    ? Object.entries(params.context.mealPlan)
+        .map(([dayKey, dayData]) => {
+          const dayMealText = dayData.meals
+            .map((meal) => {
+              const itemsList = meal.items
+                .map((item) => `${item.name} (${item.calories}kcal)`)
+                .join(', ');
+              return `${meal.mealType}: ${itemsList}`;
+            })
+            .join(' | ');
+          return `${dayKey}: ${dayMealText}`;
+        })
+        .join('\n')
+    : 'Nenhuma dieta ativa.';
+
   // function to display the history
   const historyText = params.history
     .slice(-6) // Get the last 6 messages in the history
@@ -76,6 +194,11 @@ export const chatWithAI = async (params: {
     Refeições de hoje:
     ${mealsText}
 
+    Dieta ativa:
+    ${planMealsText}
+
+    Hoje é: ${params.context?.todayKey || 'não informado'}
+    
     Histórico da conversa resumido:
     ${historyText || 'Nenhuma mensagem anterior'}
 

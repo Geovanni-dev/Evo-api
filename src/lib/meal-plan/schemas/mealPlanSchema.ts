@@ -15,6 +15,10 @@ const foodItemSchema = z.object({
   name: z.string().min(1, 'Nome do alimento é obrigatório'),
   quantity: z.number().positive('Quantidade deve ser maior que zero'),
   unit: z.string().min(1, 'Unidade é obrigatória'), // "g", "ml", "unidade", "colher de sopa", etc.
+  calories: z.number().nonnegative('Calorias não podem ser negativas'),
+  protein: z.number().nonnegative('Proteína não pode ser negativa'),
+  carbs: z.number().nonnegative('Carboidrato não pode ser negativo'),
+  fat: z.number().nonnegative('Gordura não pode ser negativa'),
 });
 
 // validate one meal
