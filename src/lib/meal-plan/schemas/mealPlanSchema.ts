@@ -13,9 +13,9 @@ export const DAYS = [
 
 export const MEAL_TYPES = [
   'cafe_da_manha',
-  'lanche_manha',
+  'lanche_da_manha',
   'almoco',
-  'lanche_tarde',
+  'lanche_da_tarde',
   'pre_treino',
   'pos_treino',
   'jantar',
@@ -55,27 +55,74 @@ export const MealPlanShape = z.object(
 export type MealPlanPayload = z.infer<typeof MealPlanShape>;
 
 // builds the schema for a given user, adding the TDEE check.
-export function buildMealPlanSchema(tdee: number) {
-  const TOLERANCE = 50; // acceptable kcal margin
+export function buildMealPlanSchema(tdee: {
+  dailyCalorieTarget: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
+}) {
+  const TOLERANCE_KCAL = 50; // acceptable kcal margin
+  const TOLERANCE_MACRO = 5; // acceptable macro margin
 
   return MealPlanShape.superRefine((plan, ctx) => {
     for (const day of DAYS) {
       const meals = plan[day].meals;
 
-      // sum every item's calories, across every meal, for this day
-      const totalCalories = meals.reduce((daySum, meal) => {
-        const mealTotal = meal.items.reduce(
-          (sum, item) => sum + item.calories,
-          0,
-        );
-        return daySum + mealTotal;
-      }, 0);
+      // calculate the total
+      const total = meals.reduce(
+        (daySum, meal) => {
+          const mealTotal = meal.items.reduce(
+            (sum, item) => ({
+              calories: sum.calories + item.calories,
+              protein: sum.protein + item.protein,
+              carbs: sum.carbs + item.carbs,
+              fat: sum.fat + item.fat,
+            }),
+            { calories: 0, protein: 0, carbs: 0, fat: 0 }, // initial value
+          );
+          return {
+            calories: daySum.calories + mealTotal.calories,
+            protein: daySum.protein + mealTotal.protein,
+            carbs: daySum.carbs + mealTotal.carbs,
+            fat: daySum.fat + mealTotal.fat,
+          };
+        },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }, // initial value
+      );
 
-      if (Math.abs(totalCalories - tdee) > TOLERANCE) {
+      // check if the total calories are within 50kcal of the TDEE
+      if (Math.abs(total.calories - tdee.dailyCalorieTarget) > TOLERANCE_KCAL) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: z.ZodIssueCode.custom, // custom error
           path: [day],
-          message: `Total de ${day} (${totalCalories}kcal) fora da margem esperada (${tdee} ± ${TOLERANCE}kcal)`,
+          message: `Total de ${day} (${total.calories}kcal) fora da margem esperada (${tdee.dailyCalorieTarget} ± ${TOLERANCE_KCAL}kcal)`,
+        });
+      }
+
+      // check if the total protein are within 5g of the TDEE
+      if (Math.abs(total.protein - tdee.proteinTarget) > TOLERANCE_MACRO) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, // custom error
+          path: [day],
+          message: `Proteínas de ${day} (${total.protein}g) fora da margem esperada (${tdee.proteinTarget} ± ${TOLERANCE_MACRO}g)`,
+        });
+      }
+
+      // check if the total carbs are within 5g of the TDEE
+      if (Math.abs(total.carbs - tdee.carbsTarget) > TOLERANCE_MACRO) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, // custom error
+          path: [day],
+          message: `Carboidratos de ${day} (${total.carbs}g) fora da margem esperada (${tdee.carbsTarget} ± ${TOLERANCE_MACRO}g)`,
+        });
+      }
+
+      // check if the total fat are within 5g of the TDEE
+      if (Math.abs(total.fat - tdee.fatTarget) > TOLERANCE_MACRO) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, // custom error
+          path: [day],
+          message: `Gorduras de ${day} (${total.fat}g) fora da margem esperada (${tdee.fatTarget} ± ${TOLERANCE_MACRO}g)`,
         });
       }
     }
@@ -83,7 +130,12 @@ export function buildMealPlanSchema(tdee: number) {
 }
 
 // builds the discriminated union for a given user's TDEE
-export function buildMealPlanRequestSchema(tdee: number) {
+export function buildMealPlanRequestSchema(tdee: {
+  dailyCalorieTarget: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
+}) {
   //  When the user accepts
   const ActiveMealPlan = z.object({
     status: z.literal('active'),

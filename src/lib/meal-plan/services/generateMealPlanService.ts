@@ -215,7 +215,7 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   }
   // Check if the parsed JSON is valid
   const week = expandTemplatesIntoWeek(parsed);
-  const schema = buildMealPlanSchema(nutritionGoal.dailyCalorieTarget); // Check if the week is valid
+  const schema = buildMealPlanSchema(nutritionGoal); // Check if the week is valid
   const result = schema.safeParse(week);
 
   if (!result.success) {

@@ -28,8 +28,8 @@ Você é a Evo, nutricionista inteligente. Você é uma assistente nutricional c
 - Ao calcular uma refeição, você deve identificar qual tipo de refeição é. Os tipos disponíveis são:
   - \`cafe_da_manha\`
   - \`almoco\`
-  - \`lanche_manha\`
-  - \`lanche_tarde\`
+  - \`lanche_da_manha\`
+  - \`lanche_da_tarde\`
   - \`jantar\`
   - \`ceia\`
   - \`pre_treino\`
