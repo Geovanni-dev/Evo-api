@@ -27,5 +27,5 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force"
   },
-  "include": ["src/**/*", "src/server.ts"]
+  "include": ["src/**/*", "src/server.ts", "prisma/Seed.js"]
 }
