@@ -6,6 +6,7 @@ import { buildMealPlanSchema } from '../schemas/mealPlanSchema.js';
 //====================== types
 type PreferencesData = {
   dietType?: string;
+  dietRestriction?: 'none' | 'vegetarian' | 'vegan';
   dietCategory?: string;
   suplementUse?: string;
   mealsPerDay?: number;
@@ -21,7 +22,114 @@ type RestrictionsData = {
   observations?: string;
 };
 
+type MacroTargets = {
+  dailyCalorieTarget: number;
+  proteinTarget: number;
+  carbsTarget: number;
+  fatTarget: number;
+};
+
 //============ auxiliar functions
+
+// Accepts both the canonical key ("vegan") and the legacy label ("Vegana")
+function normalizeDietRestriction(
+  preferences: PreferencesData,
+): 'none' | 'vegetarian' | 'vegan' {
+  if (preferences.dietRestriction) return preferences.dietRestriction;
+
+  const raw = (preferences.dietType ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+
+  if (raw.includes('vegan')) return 'vegan';
+  if (raw.includes('vegetarian')) return 'vegetarian';
+  return 'none';
+}
+
+// Reshapes the macro split for health conditions, keeping total calories
+function buildAdjustedTargets(
+  base: MacroTargets,
+  healthConditions: string[],
+): { targets: MacroTargets; warnings: string[] } {
+  const has = (key: string) => healthConditions.includes(key);
+  const warnings: string[] = [];
+
+  let { proteinTarget, carbsTarget } = base;
+  const { dailyCalorieTarget } = base;
+
+  if (has('ckd')) {
+    const cap = (dailyCalorieTarget * 0.15) / 4;
+    if (proteinTarget > cap) {
+      proteinTarget = cap;
+      warnings.push(
+        'Sua proteína diária foi reduzida por causa da condição renal informada. Procure acompanhamento de nutricionista ou nefrologista para definir o valor adequado ao seu caso.',
+      );
+    }
+  }
+
+  if (has('diabetes_t2')) {
+    const moderate = (dailyCalorieTarget * 0.4) / 4;
+    if (carbsTarget > moderate) {
+      carbsTarget = moderate;
+      warnings.push(
+        'Seu carboidrato diário foi moderado por causa do diabetes informado, e distribuído entre as refeições. Isso não substitui acompanhamento médico.',
+      );
+    }
+  }
+
+  const fatTarget =
+    (dailyCalorieTarget - proteinTarget * 4 - carbsTarget * 4) / 9;
+
+  return {
+    targets: {
+      dailyCalorieTarget,
+      proteinTarget: Math.round(proteinTarget),
+      carbsTarget: Math.round(carbsTarget),
+      fatTarget: Math.round(fatTarget),
+    },
+    warnings,
+  };
+}
+
+// Builds the prompt section with food guidance for each reported condition
+function buildHealthGuidance(
+  healthConditions: string[],
+  restriction: 'none' | 'vegetarian' | 'vegan',
+): string {
+  const has = (key: string) => healthConditions.includes(key);
+  const rules: string[] = [];
+
+  if (has('diabetes_t2')) {
+    rules.push(
+      '- Diabetes: distribua o carboidrato entre TODAS as refeições, sem concentrar em uma só. Prefira fontes integrais e leguminosas; evite concentrar açúcar de fruta numa refeição isolada.',
+    );
+  }
+  if (has('ckd')) {
+    rules.push(
+      '- Doença renal: use a proteína de forma econômica e priorize fontes de alto valor biológico. Não ultrapasse a meta de proteína informada em nenhum dia.',
+    );
+  }
+  if (has('hypertension')) {
+    rules.push(
+      '- Hipertensão: evite queijos curados e alimentos em conserva. Inclua na descrição do plano a orientação de preparar sem adicionar sal, temperando com ervas, alho e limão.',
+    );
+  }
+  if (has('high_cholesterol')) {
+    rules.push(
+      '- Colesterol alto: prefira carnes magras (patinho, músculo, peito de frango) e peixes; evite queijos gordurosos e cortes com muita gordura. Inclua aveia e leguminosas pela fibra solúvel.',
+    );
+  }
+  if (restriction === 'vegan') {
+    rules.push(
+      '- Dieta vegana: a vitamina B12 não é obtida em quantidade suficiente por alimentos vegetais. Inclua no plano a observação de que a suplementação de B12 é necessária e deve ser orientada por profissional.',
+    );
+  }
+
+  return rules.length > 0
+    ? `\n### 7. Regras por condição de saúde informada\n\n${rules.join('\n')}\n`
+    : '';
+}
 
 // Mapping of days of the week to template keys
 const WEEKDAY_TEMPLATE_MAP: Record<string, string> = {
@@ -73,16 +181,38 @@ export const generateMealPlan = async (userId: string) => {
   const restrictions =
     (preferencesRecord.restrictions as RestrictionsData) || {};
 
+  const dietRestriction = normalizeDietRestriction(preferences);
+  const healthConditions = restrictions.healthConditions ?? [];
+
+  // Kidney disease lowers protein while the fit routine raises it: warn instead of silently picking a side
+  const conflictWarnings =
+    healthConditions.includes('ckd') && preferences.dietCategory === 'fit'
+      ? [
+          'Você marcou condição renal e rotina fitness. O plano prioriza a segurança e mantém a proteína limitada. Converse com um profissional antes de aumentar.',
+        ]
+      : [];
+
+  const { targets, warnings: adjustWarnings } = buildAdjustedTargets(
+    {
+      dailyCalorieTarget: nutritionGoal.dailyCalorieTarget,
+      proteinTarget: nutritionGoal.proteinTarget,
+      carbsTarget: nutritionGoal.carbsTarget,
+      fatTarget: nutritionGoal.fatTarget,
+    },
+    healthConditions,
+  );
+  const warnings = [...adjustWarnings, ...conflictWarnings];
+
   const foodReference = await prisma.foodReference.findMany({
     where: {
-      ...(preferences.dietType === 'vegan' && { isVegan: true }),
-      ...(preferences.dietType === 'vegetarian' && { isVegetarian: true }),
+      ...(dietRestriction === 'vegan' && { isVegan: true }),
+      ...(dietRestriction === 'vegetarian' && { isVegetarian: true }),
     },
   });
 
   // Create the payload
   const payload = {
-    tdee: nutritionGoal,
+    tdee: targets,
     preferences,
     restrictions,
     foodReference,
@@ -187,6 +317,15 @@ Retorne APENAS um JSON válido (sem texto adicional), com os 4 modelos de dia. E
 - Se a categoria da dieta for "fit": inclua SEMPRE as refeições "pre_treino" e "pos_treino" em TODOS os 4 modelos de dia.
 - Se a categoria da dieta for "normal": não inclua "pre_treino" nem "pos_treino".
 - Suplementos (whey, hipercalórico, albumina, barra de proteína) só podem aparecer se o uso de suplementos estiver informado. Caso contrário, use fonte de proteína real da mesma categoria.
+- No máximo DUAS leguminosas diferentes (feijões, lentilha, ervilha, tremoço) por dia. Empilhar três ou mais fecha os macros na conta, mas gera volume e fibra excessivos.
+${buildHealthGuidance(healthConditions, dietRestriction)}
+---
+
+### 8. Linguagem do plano
+
+- Descreva o plano como apoio a hábitos alimentares, nunca como tratamento.
+- NÃO afirme que o plano controla, trata, cura ou previne qualquer doença.
+- Quando houver condição de saúde informada, mencione que o plano não substitui acompanhamento profissional.
 
 Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados fornecidos.`;
 
@@ -215,7 +354,8 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   }
   // Check if the parsed JSON is valid
   const week = expandTemplatesIntoWeek(parsed);
-  const schema = buildMealPlanSchema(nutritionGoal); // Check if the week is valid
+  // Validate against the adjusted targets, not the original ones
+  const schema = buildMealPlanSchema(targets);
   const result = schema.safeParse(week);
 
   if (!result.success) {
@@ -224,5 +364,5 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
     }); // Throw an error
   }
 
-  return result.data;
+  return { plan: result.data, targets, warnings };
 };

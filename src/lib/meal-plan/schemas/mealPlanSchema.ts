@@ -62,7 +62,10 @@ export function buildMealPlanSchema(tdee: {
   fatTarget: number;
 }) {
   const TOLERANCE_KCAL = 50; // acceptable kcal margin
-  const TOLERANCE_MACRO = 5; // acceptable macro margin
+  const MACRO_TOLERANCE_PCT = 0.05;
+  const MACRO_TOLERANCE_MIN = 5;
+  const macroTolerance = (target: number) =>
+    Math.max(MACRO_TOLERANCE_MIN, target * MACRO_TOLERANCE_PCT);
 
   return MealPlanShape.superRefine((plan, ctx) => {
     for (const day of DAYS) {
@@ -100,29 +103,32 @@ export function buildMealPlanSchema(tdee: {
       }
 
       // check if the total protein are within 5g of the TDEE
-      if (Math.abs(total.protein - tdee.proteinTarget) > TOLERANCE_MACRO) {
+      const proteinTolerance = macroTolerance(tdee.proteinTarget);
+      if (Math.abs(total.protein - tdee.proteinTarget) > proteinTolerance) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, // custom error
           path: [day],
-          message: `Proteínas de ${day} (${total.protein}g) fora da margem esperada (${tdee.proteinTarget} ± ${TOLERANCE_MACRO}g)`,
+          message: `Proteínas de ${day} (${total.protein}g) fora da margem esperada (${tdee.proteinTarget} ± ${proteinTolerance.toFixed(0)}g)`,
         });
       }
 
       // check if the total carbs are within 5g of the TDEE
-      if (Math.abs(total.carbs - tdee.carbsTarget) > TOLERANCE_MACRO) {
+      const carbsTolerance = macroTolerance(tdee.carbsTarget);
+      if (Math.abs(total.carbs - tdee.carbsTarget) > carbsTolerance) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, // custom error
           path: [day],
-          message: `Carboidratos de ${day} (${total.carbs}g) fora da margem esperada (${tdee.carbsTarget} ± ${TOLERANCE_MACRO}g)`,
+          message: `Carboidratos de ${day} (${total.carbs}g) fora da margem esperada (${tdee.carbsTarget} ± ${carbsTolerance.toFixed(0)}g)`,
         });
       }
 
       // check if the total fat are within 5g of the TDEE
-      if (Math.abs(total.fat - tdee.fatTarget) > TOLERANCE_MACRO) {
+      const fatTolerance = macroTolerance(tdee.fatTarget);
+      if (Math.abs(total.fat - tdee.fatTarget) > fatTolerance) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, // custom error
           path: [day],
-          message: `Gorduras de ${day} (${total.fat}g) fora da margem esperada (${tdee.fatTarget} ± ${TOLERANCE_MACRO}g)`,
+          message: `Gorduras de ${day} (${total.fat}g) fora da margem esperada (${tdee.fatTarget} ± ${fatTolerance.toFixed(0)}g)`,
         });
       }
     }

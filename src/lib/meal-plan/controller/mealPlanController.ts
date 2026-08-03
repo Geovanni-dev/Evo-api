@@ -74,12 +74,12 @@ export const storeMealPlan = async (req: Request, res: Response) => {
     if (!userId) {
       return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
     }
-    const planJson = await generateMealPlan(userId);
+    const { plan, targets, warnings } = await generateMealPlan(userId);
     const savedPlan = await updateActiveMealPlan(userId, {
       status: 'active',
-      planJson,
+      planJson: plan,
     });
-    return res.status(200).json(savedPlan); // Return the preferences with a 200 status code
+    return res.status(200).json({ ...savedPlan, targets, warnings }); // Return the preferences with a 200 status code
   } catch (error) {
     console.log('Erro ao gerar dieta', error);
     if (error instanceof Error) {
