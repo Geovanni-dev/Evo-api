@@ -63,7 +63,7 @@ function buildAdjustedTargets(
     if (proteinTarget > cap) {
       proteinTarget = cap;
       warnings.push(
-        'Sua proteína diária foi reduzida por causa da condição renal informada. Procure acompanhamento de nutricionista ou nefrologista para definir o valor adequado ao seu caso.',
+        'Sua proteína diária foi reduzida pela condição renal informada.',
       );
     }
   }
@@ -73,7 +73,7 @@ function buildAdjustedTargets(
     if (carbsTarget > moderate) {
       carbsTarget = moderate;
       warnings.push(
-        'Seu carboidrato diário foi moderado por causa do diabetes informado, e distribuído entre as refeições. Isso não substitui acompanhamento médico.',
+        'Seu carboidrato diário foi moderado e distribuído entre as refeições.',
       );
     }
   }
@@ -188,7 +188,7 @@ export const generateMealPlan = async (userId: string) => {
   const conflictWarnings =
     healthConditions.includes('ckd') && preferences.dietCategory === 'fit'
       ? [
-          'Você marcou condição renal e rotina fitness. O plano prioriza a segurança e mantém a proteína limitada. Converse com um profissional antes de aumentar.',
+          'Você marcou condição renal e rotina fitness. Mantivemos a proteína limitada por segurança.',
         ]
       : [];
 
@@ -314,8 +314,9 @@ Retorne APENAS um JSON válido (sem texto adicional), com os 4 modelos de dia. E
 
 - Alimentos de folha/salada crus (alface, tomate, pepino, repolho) são sempre "à vontade", sem gramatura fixa.
 - Vegetais cozidos (cenoura, brócolis, abobrinha, couve, beterraba) continuam com porção em gramas normalmente.
-- Se a categoria da dieta for "fit": inclua SEMPRE as refeições "pre_treino" e "pos_treino" em TODOS os 4 modelos de dia.
-- Se a categoria da dieta for "normal": não inclua "pre_treino" nem "pos_treino".
+- Se a categoria da dieta for "fit": use "pre_treino" e "pos_treino" NO LUGAR de "lanche_da_manha" e "ceia", em TODOS os 4 modelos de dia. Elas SUBSTITUEM essas refeições, não se somam a elas — o total de refeições do dia deve continuar igual ao número informado.
+- "pre_treino" e "pos_treino" não têm horário fixo: são consumidas antes e depois do treino, no horário em que o usuário treinar.
+- Se a categoria da dieta for "normal": não inclua "pre_treino" nem "pos_treino"; use "lanche_da_manha" e "lanche_da_tarde" normalmente.
 - Suplementos (whey, hipercalórico, albumina, barra de proteína) só podem aparecer se o uso de suplementos estiver informado. Caso contrário, use fonte de proteína real da mesma categoria.
 - No máximo DUAS leguminosas diferentes (feijões, lentilha, ervilha, tremoço) por dia. Empilhar três ou mais fecha os macros na conta, mas gera volume e fibra excessivos.
 ${buildHealthGuidance(healthConditions, dietRestriction)}
