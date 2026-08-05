@@ -198,7 +198,7 @@ export const chatWithAI = async (params: {
     ${planMealsText}
 
     Hoje é: ${params.context?.todayKey || 'não informado'}
-    
+
     Histórico da conversa resumido:
     ${historyText || 'Nenhuma mensagem anterior'}
 
@@ -213,7 +213,7 @@ export const chatWithAI = async (params: {
   const genAI = new GoogleGenAI({ apiKey }); // Create a new instance of the GoogleGenAI class
   // generate the response
   const response = await genAI.models.generateContent({
-    model: 'gemini-3.1-flash-lite',
+    model: 'gemini-3.5-flash-lite',
     contents: fullPrompt,
   });
   return response.text;
