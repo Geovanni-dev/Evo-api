@@ -1,9 +1,9 @@
-import Routes from 'express'; // Import the Routes class from the Express library
+import Routes from 'express';
 
-import { storeChat } from '../controller/aiController.js'; // Import the storeChat controller
+import { storeChat } from '../controller/aiController.js';
 
-const router = Routes.Router(); // Create a new instance of the Routes class
+const router = Routes.Router();
 
-router.post('/chat', storeChat); // Define a POST route for storing chat messages
+router.post('/chat', storeChat);
 
-export default router; // Export the router
+export default router;

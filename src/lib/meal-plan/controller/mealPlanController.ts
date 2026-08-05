@@ -1,42 +1,38 @@
-import type { Request, Response } from 'express'; // Import the Request and Response types from the Express library
-import prisma from '../../prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
-import { z } from 'zod'; // Import the zod library for schema validation
+import type { Request, Response } from 'express';
+import prisma from '../../prisma/prisma.js';
+import { z } from 'zod';
 import {
   getActiveMealPlan,
   updateActiveMealPlan,
-} from '../services/mealPlanService.js'; // Import the getMealPlan service function
-import { generateMealPlan } from '../services/generateMealPlanService.js'; // Import the generateMealPlan service function
-import { buildMealPlanRequestSchema } from '../schemas/mealPlanSchema.js'; // Import the mealPlanSchema for validation
+} from '../services/mealPlanService.js';
+import { generateMealPlan } from '../services/generateMealPlanService.js';
+import { buildMealPlanRequestSchema } from '../schemas/mealPlanSchema.js';
 
 //=============================mealplanController
 
-// FUNCTION FOR GET ACTIVE MEAL PLAN
 export const indexMealPlan = async (req: Request, res: Response) => {
   try {
-    // Get the user ID from the request
     const userId =
       (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
+      (process.env.DEFAULT_USER_ID as string);
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+      return res.status(401).json({ error: 'Id do usuário não fornecido' });
     }
-    // Get the meal plan from the database
     const result = await getActiveMealPlan(userId);
-    return res.status(200).json(result); // Return the preferences with a 200 status code
+    return res.status(200).json(result);
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
 
-//FUNCTION FOR UPDATE/CREATE A MEAL PLAN
 export const updateMealPlan = async (req: Request, res: Response) => {
   try {
     const userId =
       (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
+      (process.env.DEFAULT_USER_ID as string);
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+      return res.status(401).json({ error: 'Id do usuário não fornecido' });
     }
     const nutritionGoal = await prisma.userNutritionGoal.findUnique({
       where: { userId },
@@ -44,14 +40,14 @@ export const updateMealPlan = async (req: Request, res: Response) => {
     if (!nutritionGoal) {
       return res
         .status(404)
-        .json({ error: 'Objetivo nutricional não encontrado' }); // Return a 404 status code if the nutrition goal is not found
+        .json({ error: 'Objetivo nutricional não encontrado' });
     }
-    const schema = buildMealPlanRequestSchema(nutritionGoal); // Get the meal plan schema
+    const schema = buildMealPlanRequestSchema(nutritionGoal);
 
-    const payload = schema.parse(req.body); // Validate the request body against the mealPlanSchema
+    const payload = schema.parse(req.body);
 
-    const result = await updateActiveMealPlan(userId, payload); // Update the meal plan in the database
-    return res.status(200).json(result); // Return the preferences with a 200 status code
+    const result = await updateActiveMealPlan(userId, payload);
+    return res.status(200).json(result);
   } catch (error) {
     console.log(error);
     if (error instanceof z.ZodError) {
@@ -59,9 +55,9 @@ export const updateMealPlan = async (req: Request, res: Response) => {
       return res.status(400).json({
         error: 'Dados da solicitação inválidos',
         details: error.issues,
-      }); // Return a 400 status code with validation error details
+      });
     } else {
-      return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message with a 500 status code
+      return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
 };
@@ -70,29 +66,27 @@ export const storeMealPlan = async (req: Request, res: Response) => {
   try {
     const userId =
       (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string); // Get the user ID from the request or use the default user ID
+      (process.env.DEFAULT_USER_ID as string);
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' }); // Return a 401 status code if the user ID is not provided
+      return res.status(401).json({ error: 'Id do usuário não fornecido' });
     }
     const { plan, targets, warnings } = await generateMealPlan(userId);
     const savedPlan = await updateActiveMealPlan(userId, {
       status: 'active',
       planJson: plan,
     });
-    return res.status(200).json({ ...savedPlan, targets, warnings }); // Return the preferences with a 200 status code
+    return res.status(200).json({ ...savedPlan, targets, warnings });
   } catch (error) {
     console.log('Erro ao gerar dieta', error);
     if (error instanceof Error) {
       if (error.message === 'Chave de API do Gemini não fornecida no .env') {
         return res
           .status(400)
-          .json({ error: 'Chave de API do Gemini não fornecida no .env' }); // Return a 400 status code
+          .json({ error: 'Chave de API do Gemini não fornecida no .env' });
       }
-      // Check if the error message contains "Meta nutricional"
       if (error.message.includes('Meta nutricional')) {
         return res.status(404).json({ error: error.message });
       }
-      // Check if the error message contains "Preferências"
       if (error.message.includes('Preferências')) {
         return res.status(404).json({ error: error.message });
       }
@@ -102,6 +96,6 @@ export const storeMealPlan = async (req: Request, res: Response) => {
           .json({ error: 'Erro ao processar resposta da IA' });
       }
     }
-    return res.status(500).json({ error: 'Erro interno do servidor' }); // Return a generic error message
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };

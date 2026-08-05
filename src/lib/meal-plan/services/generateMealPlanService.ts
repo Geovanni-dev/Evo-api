@@ -1,6 +1,6 @@
-import prisma from '../../prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
-import { GoogleGenAI } from '@google/genai'; // Import the GoogleGenerativeAI class from the @google/generative-ai package
-import { DAYS } from '../schemas/mealPlanSchema.js'; // Import the DAYS constant from the mealPlanSchema.js file
+import prisma from '../../prisma/prisma.js';
+import { GoogleGenAI } from '@google/genai';
+import { DAYS } from '../schemas/mealPlanSchema.js';
 import { buildMealPlanSchema } from '../schemas/mealPlanSchema.js';
 
 //====================== types
@@ -131,7 +131,6 @@ function buildHealthGuidance(
     : '';
 }
 
-// Mapping of days of the week to template keys
 const WEEKDAY_TEMPLATE_MAP: Record<string, string> = {
   monday: 'dayA',
   tuesday: 'dayB',
@@ -142,13 +141,11 @@ const WEEKDAY_TEMPLATE_MAP: Record<string, string> = {
   sunday: 'dayC',
 };
 
-// function for expandTemplatesIntoWeek
 function expandTemplatesIntoWeek(template: Record<string, unknown>) {
   const week = {} as Record<string, unknown>;
   for (const day of DAYS) {
-    const templateKey = WEEKDAY_TEMPLATE_MAP[day] ?? 'dayA'; // Get the template key for the current day
-
-    week[day] = template[templateKey]; // Add the expanded day to the week
+    const templateKey = WEEKDAY_TEMPLATE_MAP[day] ?? 'dayA';
+    week[day] = template[templateKey];
   }
   return week;
 }
@@ -157,7 +154,6 @@ function expandTemplatesIntoWeek(template: Record<string, unknown>) {
 
 export const generateMealPlan = async (userId: string) => {
   const nutritionGoal = await prisma.userNutritionGoal.findUnique({
-    // Query the database for the user's nutrition goal
     where: {
       userId,
     },
@@ -167,7 +163,6 @@ export const generateMealPlan = async (userId: string) => {
   }
 
   const preferencesRecord = await prisma.userPreferences.findUnique({
-    // Query the database for the user's preferences
     where: {
       userId,
     },
@@ -176,7 +171,6 @@ export const generateMealPlan = async (userId: string) => {
     throw new Error('Preferências nao encontradas');
   }
 
-  //  Function for get user preferences
   const preferences = (preferencesRecord.preferences as PreferencesData) || {};
   const restrictions =
     (preferencesRecord.restrictions as RestrictionsData) || {};
@@ -210,7 +204,6 @@ export const generateMealPlan = async (userId: string) => {
     },
   });
 
-  // Create the payload
   const payload = {
     tdee: targets,
     preferences,
@@ -334,31 +327,27 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   if (!apiKey) {
     throw new Error('Chave de API do Gemini não fornecida no .env');
   }
-  const genAI = new GoogleGenAI({ apiKey }); // Create a new instance of the GoogleGenAI class
+  const genAI = new GoogleGenAI({ apiKey });
   const response = await genAI.models.generateContent({
     model: 'gemini-3.6-flash',
     contents: prompt,
   });
-  // Check if the response is valid
   const rawText = response.text;
   if (!rawText) {
     throw new Error('Resposta da IA está vazia');
   }
 
-  let parsed; // Variable to store the parsed JSON
+  let parsed;
 
-  // Function to strip the JSON fence from the response
   function stripJsonFence(text: string): string {
     const match = text.match(/```json\s*([\s\S]*?)\s*```/);
     return match?.[1] ?? text.trim();
   }
-  // Try to parse the response as JSON
   try {
     parsed = JSON.parse(stripJsonFence(rawText));
   } catch (error) {
     throw new Error('Resposta da IA não é um JSON válido', { cause: error });
   }
-  // Check if the parsed JSON is valid
   const week = expandTemplatesIntoWeek(parsed);
   // Validate against the adjusted targets, not the original ones
   const schema = buildMealPlanSchema(targets);
@@ -367,7 +356,7 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   if (!result.success) {
     throw new Error('Dieta gerada não bate com o TDEE', {
       cause: result.error.issues,
-    }); // Throw an error
+    });
   }
 
   return { plan: result.data, targets, warnings };

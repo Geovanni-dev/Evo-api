@@ -1,4 +1,4 @@
-import { z } from 'zod'; // Import the zod library for schema validation
+import { z } from 'zod';
 
 // ========================= schema for meal validation using zod
 
@@ -13,7 +13,7 @@ const itemSchema = z.object({
 });
 
 export const CreateMealSchema = z.object({
-  items: z.array(itemSchema).min(1), // Validate that the items is an array of itemSchema with at least one item
+  items: z.array(itemSchema).min(1),
   mealType: z
     .enum([
       'cafe_da_manha',
@@ -26,15 +26,15 @@ export const CreateMealSchema = z.object({
       'ceia',
       'refeicao_livre',
     ])
-    .optional(), // Validate that the mealType is one of the specified enum values
-  aiRawResponse: z.unknown().optional(), // Validate that the aiRawResponse is of unknown type, optional
+    .optional(),
+  aiRawResponse: z.unknown().optional(),
   localDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de data inválido. Use YYYY-MM-DD.'), // Validate that the localDate is in the format YYYY-MM-DD
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de data inválido. Use YYYY-MM-DD.'),
 });
 
 export const UpdateMealSchema = z.object({
-  items: z.array(itemSchema).min(1), // Validate that the items is an array of itemSchema with at least one item
+  items: z.array(itemSchema).min(1),
   mealType: z
     .enum([
       'cafe_da_manha',
@@ -47,8 +47,8 @@ export const UpdateMealSchema = z.object({
       'ceia',
       'refeicao_livre',
     ])
-    .optional(), // Validate that the mealType is one of the specified enum values
-  aiRawResponse: z.unknown().optional(), // Validate that the aiRawResponse is of unknown type, optional
+    .optional(),
+  aiRawResponse: z.unknown().optional(),
 });
 
 //scheme to validate the search date
@@ -81,7 +81,7 @@ export const DateSchema = z
     { message: 'O intervalo não pode passar de 31 dias.' },
   );
 
-export type DateSchemaType = z.infer<typeof DateSchema>; // Infer the TypeScript type for the DateSchema
+export type DateSchemaType = z.infer<typeof DateSchema>;
 
-export type UpdateMealPayload = z.infer<typeof UpdateMealSchema>; // Infer the TypeScript type for the upadateMealSchema
-export type CreateMealPayload = z.infer<typeof CreateMealSchema>; // Infer the TypeScript type for the CreatedMealSchema
+export type UpdateMealPayload = z.infer<typeof UpdateMealSchema>;
+export type CreateMealPayload = z.infer<typeof CreateMealSchema>;

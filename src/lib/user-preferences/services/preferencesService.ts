@@ -1,14 +1,14 @@
-import prisma from '../../prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
+import prisma from '../../prisma/prisma.js';
 
 //============imports Zod
 import {
   RestrictionSchema,
   PreferenceSchema,
-} from '../schemas/preferencesSchema.js'; // Import the RestrictionSchema and PreferenceSchema
+} from '../schemas/preferencesSchema.js';
 import type {
   RestrictionPayload,
   PreferencePayload,
-} from '../schemas/preferencesSchema.js'; // import the RestrictionPayload and PreferencePayload types
+} from '../schemas/preferencesSchema.js';
 
 //========== imports Redis
 import {
@@ -18,7 +18,7 @@ import {
   setRestrictionsCache,
   getRestrictionsCache,
   deleteRestrictionsCache,
-} from './preferencesCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
+} from './preferencesCache.js';
 import type {
   PreferencesCacheData,
   RestrictionsCacheData,
@@ -26,50 +26,44 @@ import type {
 
 //=============================== function auxliary
 
-// FUNCTION FOR FILTER UNDEFINED
-function filterUndefined<T extends Record<string, unknown>>( // Define a generic function to filter out undefined values
+function filterUndefined<T extends Record<string, unknown>>(
   obj: T,
 ): Partial<T> {
   return Object.fromEntries(
-    // Convert the filtered entries to a new object
     Object.entries(obj).filter(([_, v]) => v !== undefined),
   ) as Partial<T>;
 }
 
 //============================== preferencesService
 
-// FUNCTION FOR GET USER PREFERENCES
 export const getPreferences = async (userId: string) => {
-  const cached = await getPreferencesCache(userId); // Try to get the preferences data from the Redis cache
+  const cached = await getPreferencesCache(userId);
   if (cached) {
     return cached;
   }
-  // Query the database for meals created by the user
   const record = await prisma.userPreferences.findUnique({
     where: {
       userId,
     },
   });
-  if (!record) return null; // Return null if the record is not found
+  if (!record) return null;
 
-  const data = filterUndefined(record.preferences as PreferencesCacheData); // Filter out undefined values
+  const data = filterUndefined(record.preferences as PreferencesCacheData);
 
-  await setPreferencesCache(userId, data); // Set the meals data in the Redis cache
+  await setPreferencesCache(userId, data);
   return data;
 };
 
-// FUNCTION FOR UPDATE/CREATE USER PREFERENCES
 export const updatePreferences = async (
   userId: string,
   payload: PreferencePayload,
 ) => {
-  const parsed = PreferenceSchema.parse(payload); // Parse the payload using the PreferenceSchema
+  const parsed = PreferenceSchema.parse(payload);
   const current = await prisma.userPreferences.findUnique({
     where: {
       userId,
     },
   });
-  // Merge the current preferences with the new preferences
   const merged = {
     ...((current?.preferences as object) || {}),
     ...parsed,
@@ -92,32 +86,29 @@ export const updatePreferences = async (
 
 //============================================== restrictionsService
 
-// FUNCTION FOR GET USER RESTRICTIONS
 export const getRestrictions = async (userId: string) => {
-  const cached = await getRestrictionsCache(userId); // Try to get the restrictions data from the Redis cache
+  const cached = await getRestrictionsCache(userId);
   if (cached) {
     return cached;
   }
-  // Query the database for meals created by the user
   const record = await prisma.userPreferences.findUnique({
     where: {
       userId,
     },
   });
-  if (!record) return null; // Return null if the record is not found
+  if (!record) return null;
 
-  const data = filterUndefined(record.restrictions as RestrictionsCacheData); // Filter out undefined values
+  const data = filterUndefined(record.restrictions as RestrictionsCacheData);
 
-  await setRestrictionsCache(userId, data); // Set the restrictions data in the Redis cache
+  await setRestrictionsCache(userId, data);
   return data;
 };
 
-// FUNCTION FOR UPDATE/CREATE USER RESTRICTIONS
 export const updateRestrictions = async (
   userId: string,
   payload: RestrictionPayload,
 ) => {
-  const parsed = RestrictionSchema.parse(payload); // Parse the payload using the RestrictionSchema
+  const parsed = RestrictionSchema.parse(payload);
 
   const current = await prisma.userPreferences.findUnique({
     where: {
@@ -125,7 +116,6 @@ export const updateRestrictions = async (
     },
   });
 
-  // Merge the current restrictions with the new restrictions
   const merged = {
     ...((current?.restrictions as object) || {}),
     ...parsed,

@@ -1,19 +1,18 @@
-import prisma from '../../prisma/prisma.js'; // Import the PrismaClient instance from the prisma.ts file
+import prisma from '../../prisma/prisma.js';
 import { type MealPlanRequestPayload } from '../schemas/mealPlanSchema.js';
 import {
   setMealPlanCache,
   getMealPlanCache,
   deleteMealPlanCache,
-} from './mealPlanCache.js'; // Import the setDailyCache, getDailyCache, and deleteDailyCache functions
+} from './mealPlanCache.js';
 import type { MealPlanCacheDate } from './mealPlanCache.js';
 
 //============================== mealPlanService
 
-// FUNCTION FOR GET ACTIVE MEAL PLAN
 export const getActiveMealPlan = async (
   userId: string,
 ): Promise<MealPlanCacheDate | null> => {
-  const cached = await getMealPlanCache(userId); // Try to get the meals data from the Redis cache
+  const cached = await getMealPlanCache(userId);
   if (cached) {
     return cached;
   }
@@ -23,9 +22,8 @@ export const getActiveMealPlan = async (
       status: 'active',
     },
   });
-  if (!record) return null; // Return null if the record is not found
+  if (!record) return null;
 
-  // Set the meals data in the Redis cache
   const cacheData: MealPlanCacheDate = {
     id: record.id,
     userId: record.userId,
@@ -34,11 +32,10 @@ export const getActiveMealPlan = async (
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
-  await setMealPlanCache(userId, cacheData); // Set the meals data in the Redis cache
+  await setMealPlanCache(userId, cacheData);
   return cacheData;
 };
 
-// FUNCITIOM FOR UPDATE A ACTIVE MEAL PLAN
 export const updateActiveMealPlan = async (
   userId: string,
   payload: MealPlanRequestPayload,
@@ -49,7 +46,7 @@ export const updateActiveMealPlan = async (
     },
     update: {
       status: payload.status,
-      ...(payload.status === 'active' && { planJson: payload.planJson }), // Update the planJson if the status is 'active'
+      ...(payload.status === 'active' && { planJson: payload.planJson }),
     },
 
     create: {
@@ -59,9 +56,8 @@ export const updateActiveMealPlan = async (
     },
   });
 
-  await deleteMealPlanCache(userId); // Delete the meals data from the Redis cache
+  await deleteMealPlanCache(userId);
 
-  // Set the meals data in the Redis cache
   const cacheData: MealPlanCacheDate = {
     id: record.id,
     userId: record.userId,
@@ -70,6 +66,6 @@ export const updateActiveMealPlan = async (
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
-  await setMealPlanCache(userId, cacheData); // Set the meals data in the Redis cache
+  await setMealPlanCache(userId, cacheData);
   return cacheData;
 };

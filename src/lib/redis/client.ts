@@ -1,8 +1,7 @@
-import { createClient } from 'redis'; // Import the createClient function from the redis library
+import { createClient } from 'redis';
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'; // Get the Redis URL from the environment variable
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
-// Create a new Redis client with the provided URL
 const client = createClient({
   url: redisUrl,
   socket: {
@@ -11,13 +10,13 @@ const client = createClient({
   },
 });
 client.on('error', (error) => {
-  console.error('Redis error:', error); // Log any errors that occur with the Redis client
+  console.error('Redis error:', error);
 });
 
 client.on('connect', () => {
-  console.log('Client Redis Conectado'); // Log a message when the Redis client is connected
+  console.log('Client Redis Conectado');
 });
 
-await client.connect(); // Connect to the Redis server
+await client.connect();
 
 export default client;

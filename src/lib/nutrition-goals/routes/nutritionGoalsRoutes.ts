@@ -1,10 +1,10 @@
-import { Router } from 'express'; // Import the Router class from the Express library
-import { update, index } from '../controller/nutritionGoalsController.js'; // Import the nutritionGoalsController
+import { Router } from 'express';
+import { update, index } from '../controller/nutritionGoalsController.js';
 
-const router = Router(); // Create a new instance of the Router class
+const router = Router();
 
-router.put('/', update); // Define a POST route for creating or updating a nutrition goal, protected by authentication middleware
+router.put('/', update);
 
-router.get('/', index); // Define a GET route for retrieving a nutrition goal, protected by authentication middleware
+router.get('/', index);
 
-export default router; // Export the router
+export default router;

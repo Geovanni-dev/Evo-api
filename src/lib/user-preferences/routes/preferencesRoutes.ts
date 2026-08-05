@@ -1,20 +1,20 @@
-import Routes from 'express'; // Import the Routes class from the Express library
+import Routes from 'express';
 
 import {
   indexPref,
   updatePref,
   indexRest,
   updateRest,
-} from '../controller/preferencesController.js'; // Import the preferencesController
+} from '../controller/preferencesController.js';
 
-const router = Routes.Router(); // Create a new instance of the Routes class
+const router = Routes.Router();
 
-router.get('/', indexPref); // Define a GET route for retrieving all preferences, protected by authentication middleware
+router.get('/', indexPref);
 
-router.patch('/', updatePref); // Define a PATCH route for updating a preference, protected by authentication middleware
+router.patch('/', updatePref);
 
-router.get('/restrictions', indexRest); // Define a GET route for retrieving all restrictions, protected by authentication middleware
+router.get('/restrictions', indexRest);
 
-router.patch('/restrictions', updateRest); // Define a PATCH route for updating a restriction, protected by authentication middleware
+router.patch('/restrictions', updateRest);
 
-export default router; // Export the router
+export default router;

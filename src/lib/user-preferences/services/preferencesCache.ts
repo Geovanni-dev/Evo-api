@@ -1,4 +1,4 @@
-import client from '../../redis/client.js'; // Import the Redis client
+import client from '../../redis/client.js';
 
 const TTL = 60 * 60 * 24 * 30; // 30 days in seconds
 
@@ -33,9 +33,9 @@ export const setPreferencesCache = async (
   userId: string,
   data: PreferencesCacheData,
 ) => {
-  const key = generatePreferencesKey(userId); // Generate the key for the Redis cache
-  const jsonData = JSON.stringify(data); // Convert the data to JSON
-  await client.set(key, jsonData, { EX: TTL }); // set the preferences data in the Redis cache
+  const key = generatePreferencesKey(userId);
+  const jsonData = JSON.stringify(data);
+  await client.set(key, jsonData, { EX: TTL });
 };
 
 // ================== restrictions
@@ -43,39 +43,39 @@ export const setRestrictionsCache = async (
   userId: string,
   data: RestrictionsCacheData,
 ) => {
-  const key = generateRestrictionsKey(userId); // Generate the key for the Redis cache
-  const jsonData = JSON.stringify(data); // Convert the data to JSON
-  await client.set(key, jsonData, { EX: TTL }); // set the preferences data in the Redis cache
+  const key = generateRestrictionsKey(userId);
+  const jsonData = JSON.stringify(data);
+  await client.set(key, jsonData, { EX: TTL });
 };
 
 // ================== preferences
 export const getPreferencesCache = async (userId: string) => {
-  const key = generatePreferencesKey(userId); // Generate the key for the Redis cache
-  const raw = await client.get(key); // Get the meals data from the Redis cache
+  const key = generatePreferencesKey(userId);
+  const raw = await client.get(key);
   if (!raw) {
     return null;
   }
-  return JSON.parse(raw); // Parse the JSON data and return it
+  return JSON.parse(raw);
 };
 
 // ================== restrictions
 export const getRestrictionsCache = async (userId: string) => {
-  const key = generateRestrictionsKey(userId); // Generate the key for the Redis cache
-  const raw = await client.get(key); // Get the meals data from the Redis cache
+  const key = generateRestrictionsKey(userId);
+  const raw = await client.get(key);
   if (!raw) {
     return null;
   }
-  return JSON.parse(raw); // Parse the JSON data and return it
+  return JSON.parse(raw);
 };
 
 // ================== preferences
 export const deletePreferencesCache = async (userId: string) => {
-  const key = generatePreferencesKey(userId); // Generate the key for the Redis cache
+  const key = generatePreferencesKey(userId);
   await client.del(key);
 };
 
 // ================== restrictions
 export const deleteRestrictionsCache = async (userId: string) => {
-  const key = generateRestrictionsKey(userId); // Generate the key for the Redis cache
+  const key = generateRestrictionsKey(userId);
   await client.del(key);
 };

@@ -1,6 +1,6 @@
-import redisClient from '../../redis/client.js'; // Import the Redis client
+import redisClient from '../../redis/client.js';
 
-const TTL = 60 * 60 * 12; // 12 hours in seconds / fullback
+const TTL = 60 * 60 * 12; // 12 hours in seconds / fallback
 
 //============================= types
 
@@ -37,8 +37,8 @@ export type DailyCacheData = {
 //============================================= generateKey
 
 export const generateKey = (userId: string, date: Date) => {
-  const dateString = date.toISOString().split('T')[0]; // Get the date without time
-  return `meals:${userId}:${dateString}`; // Return the generated key
+  const dateString = date.toISOString().split('T')[0];
+  return `meals:${userId}:${dateString}`;
 };
 
 //============================= setDailyCache
@@ -48,9 +48,9 @@ export const setDailyCache = async (
   date: Date,
   data: Record<string, unknown>,
 ): Promise<void> => {
-  const key = generateKey(userId, date); // Generate the key for the Redis cache
-  const jsonData = JSON.stringify(data); // Convert the data to JSON
-  await redisClient.set(key, jsonData, { EX: TTL }); // Set the meals data in the Redis cache with a TTL of 1 day
+  const key = generateKey(userId, date);
+  const jsonData = JSON.stringify(data);
+  await redisClient.set(key, jsonData, { EX: TTL });
 };
 
 //============================= getDailyCache
@@ -59,12 +59,12 @@ export const getDailyCache = async (
   userId: string,
   date: Date,
 ): Promise<DailyCacheData | null> => {
-  const key = generateKey(userId, date); // Generate the key for the Redis cache
-  const raw = await redisClient.get(key); // Get the meals data from the Redis cache
+  const key = generateKey(userId, date);
+  const raw = await redisClient.get(key);
   if (!raw) {
     return null;
   }
-  return JSON.parse(raw); // Parse the JSON data and return it
+  return JSON.parse(raw);
 };
 
 //============================= deleteDailyCache
@@ -73,6 +73,6 @@ export const deleteDailyCache = async (
   userId: string,
   date: Date,
 ): Promise<void> => {
-  const key = generateKey(userId, date); // Generate the key for the Redis cache
+  const key = generateKey(userId, date);
   await redisClient.del(key);
 };

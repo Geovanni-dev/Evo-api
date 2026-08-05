@@ -1,6 +1,6 @@
-import { GoogleGenAI } from '@google/genai'; // Import the GoogleGenerativeAI class from the @google/generative-ai package
+import { GoogleGenAI } from '@google/genai';
 
-import { SYSTEM_PROMPT } from '../prompts/systemPrompt.js'; // Import the SYSTEM_PROMPT constant
+import { SYSTEM_PROMPT } from '../prompts/systemPrompt.js';
 
 //=================types
 type Context = {
@@ -138,7 +138,6 @@ export const chatWithAI = async (params: {
   context: Context;
   history: { role: string; text: string }[];
 }) => {
-  // Define to display the context
   const contextText = params.context
     ? `Estado nutricional atual:
        - TDEE: ${params.context.tdee?.calories || 'não definido'} kcal
@@ -148,7 +147,7 @@ export const chatWithAI = async (params: {
        - Carboidratos: ${params.context.carbs || 0}g (meta: ${params.context.tdee?.carbs || 0}g)
        - Gordura: ${params.context.fat || 0}g (meta: ${params.context.tdee?.fat || 0}g)`
     : 'Ainda não há dados nutricionais para hoje.';
-  // function to display the meals
+
   const mealsText =
     params.context?.meals && params.context.meals.length > 0
       ? params.context.meals
@@ -161,7 +160,6 @@ export const chatWithAI = async (params: {
           .join('\n')
       : 'Nenhuma refeição registrada hoje.';
 
-  // function to display the plan
   const planMealsText = params.context?.mealPlan
     ? Object.entries(params.context.mealPlan)
         .map(([dayKey, dayData]) => {
@@ -178,10 +176,9 @@ export const chatWithAI = async (params: {
         .join('\n')
     : 'Nenhuma dieta ativa.';
 
-  // function to display the history
   const historyText = params.history
-    .slice(-6) // Get the last 6 messages in the history
-    .filter((msg) => msg.role !== 'system') // Filter out system messages
+    .slice(-6)
+    .filter((msg) => msg.role !== 'system')
     .map((msg) => `${msg.role === 'user' ? 'Usuário' : 'AI'}: ${msg.text}`)
     .join('\n');
   const fullPrompt = `
@@ -205,13 +202,11 @@ export const chatWithAI = async (params: {
     Usuário: ${params.messages}
     AI:`;
 
-  // define the API key
-  const apiKey = process.env.GEMINI_API_KEY; // Get the API key from environment variables
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('Chave de API do Gemini não fornecida no .env');
   }
-  const genAI = new GoogleGenAI({ apiKey }); // Create a new instance of the GoogleGenAI class
-  // generate the response
+  const genAI = new GoogleGenAI({ apiKey });
   const response = await genAI.models.generateContent({
     model: 'gemini-3.5-flash-lite',
     contents: fullPrompt,
