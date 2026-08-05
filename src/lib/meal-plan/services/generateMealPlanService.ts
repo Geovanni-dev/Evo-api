@@ -347,9 +347,14 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
 
   let parsed; // Variable to store the parsed JSON
 
+  // Function to strip the JSON fence from the response
+  function stripJsonFence(text: string): string {
+    const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+    return match?.[1] ?? text.trim();
+  }
   // Try to parse the response as JSON
   try {
-    parsed = JSON.parse(rawText);
+    parsed = JSON.parse(stripJsonFence(rawText));
   } catch (error) {
     throw new Error('Resposta da IA não é um JSON válido', { cause: error });
   }
