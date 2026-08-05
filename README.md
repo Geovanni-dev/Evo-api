@@ -1,151 +1,155 @@
+<p align="right">
+  <a href="README.pt.md">🇧🇷 Português</a>
+</p>
+
 # Evo
 
-> API backend do **Evo**, um app mobile first de nutrição com IA que será lançado nas lojas de aplicativos (App Store / Google Play).
+> Backend API for **Evo**, a mobile-first nutrition app powered by AI that will be released on the app stores (App Store / Google Play).
 
-🚧 **Projeto em desenvolvimento ativo.** Funcionalidades, rotas e schema do banco ainda estão sujeitos a mudanças frequentes. Não recomendado para uso em produção.
+🚧 **Actively under development.** Features, routes, and database schema are still subject to frequent changes. Not recommended for production use.
 
-## Sobre o projeto
+## About the project
 
-O Evo ajuda o usuário a registrar refeições, acompanhar metas nutricionais (calorias, macros) e receber planos alimentares gerados por Inteligência Artificial (Google Gemini), tudo a partir de um app mobile. Este repositório contém apenas a **API** que serve o app.
+Evo helps users log meals, track nutritional goals (calories, macros), and receive AI-generated meal plans (Google Gemini), all from a mobile app. This repository contains only the **API** that powers the app.
 
-## Funcionalidades
+## Features
 
-- 🍽️ **Refeições** — registro, listagem, edição e exclusão de refeições e itens, com resumo diário
-- 🎯 **Metas nutricionais (TDEE)** — cálculo e atualização de metas de calorias e macronutrientes
-- 🤖 **Chat com IA** — conversa nutricional integrada com Gemini
-- 📋 **Plano alimentar** — geração automática de plano alimentar via IA, respeitando restrições e preferências do usuário
-- ⚙️ **Preferências e restrições alimentares** — configuração de tipo de dieta, alimentos excluídos, restrições (glúten, lactose, etc.)
-- 🥗 **Base de alimentos** — referência nutricional de alimentos (calorias e macros por 100g)
-- ⚡ **Cache com Redis** — cache de metas, refeições, plano alimentar e preferências
+- 🍽️ **Meals** — create, list, update, and delete meals and items, with a daily summary
+- 🎯 **Nutritional goals (TDEE)** — calculation and update of calorie and macronutrient targets
+- 🤖 **AI chat** — nutrition-focused conversation powered by Gemini
+- 📋 **Meal plan** — automatic meal plan generation via AI, respecting user restrictions and preferences
+- ⚙️ **Preferences and dietary restrictions** — diet type configuration, excluded foods, restrictions (gluten, lactose, etc.)
+- 🥗 **Food reference database** — nutritional reference for foods (calories and macros per 100g)
+- ⚡ **Redis caching** — caching for goals, meals, meal plan, and preferences
 
-> ⚠️ Autenticação de usuário (login, JWT) ainda **não está implementada** — as rotas atualmente operam com um usuário padrão (`DEFAULT_USER_ID`) para fins de desenvolvimento.
+> ⚠️ User authentication (login, JWT) is **not implemented yet** — routes currently operate with a default user (`DEFAULT_USER_ID`) for development purposes.
 
-## Tecnologias
+## Tech stack
 
 - [Node.js](https://nodejs.org/) + [TypeScript](https://www.typescriptlang.org/)
 - [Express 5](https://expressjs.com/)
 - [Prisma ORM](https://www.prisma.io/) + PostgreSQL
 - [Redis](https://redis.io/) (cache)
-- [Google Gemini API](https://ai.google.dev/) (`@google/genai`) — IA generativa
-- [Zod](https://zod.dev/) — validação de schemas
-- [Cloudinary](https://cloudinary.com/) — upload/armazenamento de imagens
-- [Nodemailer](https://nodemailer.com/) — envio de e-mails
-- [Bcrypt](https://www.npmjs.com/package/bcrypt) / [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken) — preparados para autenticação (em implementação)
-- ESLint + Prettier — padronização de código
+- [Google Gemini API](https://ai.google.dev/) (`@google/genai`) — generative AI
+- [Zod](https://zod.dev/) — schema validation
+- [Cloudinary](https://cloudinary.com/) — image upload/storage
+- [Nodemailer](https://nodemailer.com/) — email sending
+- [Bcrypt](https://www.npmjs.com/package/bcrypt) / [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken) — ready for authentication (in progress)
+- ESLint + Prettier — code standards
 
-## Estrutura do projeto
+## Project structure
 
 ```
 src/
-├── app.ts                 # configuração do Express e registro das rotas
-├── server.ts               # ponto de entrada (inicia o servidor)
+├── app.ts                 # Express setup and route registration
+├── server.ts               # entry point (starts the server)
 └── lib/
-    ├── AI/                  # chat com IA (Gemini)
-    ├── meals/               # refeições e itens
-    ├── meal-plan/           # geração e gestão de plano alimentar
-    ├── nutrition-goals/     # metas nutricionais (TDEE)
-    ├── user-preferences/    # preferências e restrições alimentares
-    ├── prisma/              # client do Prisma
-    └── redis/               # client do Redis
+    ├── AI/                  # AI chat (Gemini)
+    ├── meals/               # meals and items
+    ├── meal-plan/           # meal plan generation and management
+    ├── nutrition-goals/     # nutritional goals (TDEE)
+    ├── user-preferences/    # dietary preferences and restrictions
+    ├── prisma/              # Prisma client
+    └── redis/               # Redis client
 
 prisma/
-├── schema.prisma            # modelagem do banco de dados
-└── seed.ts                  # seed inicial do banco
+├── schema.prisma            # database schema
+└── seed.ts                  # initial database seed
 ```
 
-Cada módulo em `src/lib` segue o padrão `controller/`, `routes/`, `services/` e (quando aplicável) `schemas/`.
+Each module under `src/lib` follows the `controller/`, `routes/`, `services/`, and (when applicable) `schemas/` pattern.
 
-## Requisitos de ambiente
+## Environment requirements
 
 - Node.js 20+
 - Yarn
 - PostgreSQL
 - Redis
-- Uma chave de API do [Google Gemini](https://ai.google.dev/)
+- A [Google Gemini](https://ai.google.dev/) API key
 
-### Variáveis de ambiente
+### Environment variables
 
-| Variável              | Descrição                                       |
-| ---------------------- | ------------------------------------------------ |
-| `DATABASE_URL`         | String de conexão com o PostgreSQL               |
-| `REDIS_URL`            | String de conexão com o Redis                    |
-| `GEMINI_API_KEY`       | Chave de API do Google Gemini                    |
-| `GOOGLE_GENAI_API_KEY` | Chave de API do Google GenAI                     |
-| `DEFAULT_USER_ID`      | ID de usuário padrão usado enquanto não há login |
-| `ADMIN_NAME`           | Nome do usuário administrador (seed)             |
-| `ADMIN_EMAIL`          | E-mail do usuário administrador (seed)           |
-| `ADMIN_PASSWORD`       | Senha do usuário administrador (seed)             |
-| `PORT`                 | Porta do servidor (opcional, padrão `3000`)      |
+| Variable               | Description                                    |
+| ----------------------- | ------------------------------------------------ |
+| `DATABASE_URL`         | PostgreSQL connection string                     |
+| `REDIS_URL`            | Redis connection string                          |
+| `GEMINI_API_KEY`       | Google Gemini API key                            |
+| `GOOGLE_GENAI_API_KEY` | Google GenAI API key                             |
+| `DEFAULT_USER_ID`      | Default user ID used while there's no login       |
+| `ADMIN_NAME`           | Admin user name (seed)                           |
+| `ADMIN_EMAIL`          | Admin user email (seed)                          |
+| `ADMIN_PASSWORD`       | Admin user password (seed)                       |
+| `PORT`                 | Server port (optional, defaults to `3000`)       |
 
-### Banco de dados
-
-```bash
-yarn prisma:generate   # gera o Prisma Client
-yarn prisma:migrate    # aplica as migrations
-yarn seed               # popula o banco com dados iniciais
-```
-
-### Rodando o servidor
+### Database
 
 ```bash
-yarn dev     # modo desenvolvimento (hot reload)
-yarn build   # gera build de produção
-yarn start   # roda o build de produção
+yarn prisma:generate   # generates the Prisma Client
+yarn prisma:migrate    # applies migrations
+yarn seed               # seeds the database with initial data
 ```
 
-O servidor sobe por padrão em `http://localhost:3000`.
+### Running the server
 
-## Endpoints principais
+```bash
+yarn dev     # development mode (hot reload)
+yarn build   # production build
+yarn start   # runs the production build
+```
 
-| Método | Rota                              | Descrição                          |
+The server runs on `http://localhost:3000` by default.
+
+## Main endpoints
+
+| Method | Route                              | Description                        |
 | ------ | ---------------------------------- | ----------------------------------- |
 | GET    | `/`                                 | Health check                        |
-| POST   | `/meals`                           | Cria uma refeição                   |
-| GET    | `/meals/daily`                     | Lista refeições do dia              |
-| GET    | `/meals/daily/:mealType`           | Detalha refeição por tipo           |
-| GET    | `/meals/summary`                   | Resumo nutricional diário           |
-| PUT    | `/meals/daily/:mealId`             | Atualiza refeição                   |
-| DELETE | `/meals/daily/:mealId`             | Remove refeição                     |
-| DELETE | `/meals/daily/:mealId/:itemId`     | Remove item de uma refeição         |
-| GET    | `/TDEE`                             | Consulta meta nutricional           |
-| PUT    | `/TDEE`                             | Cria/atualiza meta nutricional      |
-| POST   | `/ai/chat`                         | Chat com a IA nutricional           |
-| GET    | `/meal-plan/active`                | Consulta plano alimentar ativo      |
-| POST   | `/meal-plan/generate`              | Gera novo plano alimentar via IA    |
-| PUT    | `/meal-plan`                       | Atualiza plano alimentar            |
-| GET    | `/preferences`                     | Consulta preferências alimentares   |
-| PATCH  | `/preferences`                     | Atualiza preferências alimentares   |
-| GET    | `/preferences/restrictions`        | Consulta restrições alimentares     |
-| PATCH  | `/preferences/restrictions`        | Atualiza restrições alimentares     |
+| POST   | `/meals`                           | Create a meal                       |
+| GET    | `/meals/daily`                     | List today's meals                  |
+| GET    | `/meals/daily/:mealType`           | Get meal details by type            |
+| GET    | `/meals/summary`                   | Daily nutritional summary           |
+| PUT    | `/meals/daily/:mealId`             | Update a meal                       |
+| DELETE | `/meals/daily/:mealId`             | Delete a meal                       |
+| DELETE | `/meals/daily/:mealId/:itemId`     | Delete an item from a meal          |
+| GET    | `/TDEE`                             | Get nutritional goal                |
+| PUT    | `/TDEE`                             | Create/update nutritional goal      |
+| POST   | `/ai/chat`                         | Chat with the nutrition AI          |
+| GET    | `/meal-plan/active`                | Get the active meal plan            |
+| POST   | `/meal-plan/generate`              | Generate a new meal plan via AI     |
+| PUT    | `/meal-plan`                       | Update the meal plan                |
+| GET    | `/preferences`                     | Get dietary preferences             |
+| PATCH  | `/preferences`                     | Update dietary preferences          |
+| GET    | `/preferences/restrictions`        | Get dietary restrictions            |
+| PATCH  | `/preferences/restrictions`        | Update dietary restrictions         |
 
-Coleção do Postman disponível em [`postman/`](./postman).
+Postman collection available in [`postman/`](./postman).
 
-## Scripts disponíveis
+## Available scripts
 
-| Comando               | Descrição                                  |
-| ---------------------- | -------------------------------------------- |
-| `yarn dev`             | Inicia o servidor em modo desenvolvimento   |
-| `yarn build`           | Gera o Prisma Client e compila o TypeScript |
-| `yarn start`           | Executa o build de produção                 |
-| `yarn prisma:generate` | Gera o Prisma Client                        |
-| `yarn prisma:migrate`  | Executa as migrations do Prisma             |
-| `yarn seed`            | Popula o banco com dados iniciais           |
-| `yarn lint`            | Executa o ESLint                            |
-| `yarn lint:fix`        | Executa o ESLint e corrige o que for possível |
-| `yarn format`          | Formata o código com Prettier               |
+| Command                | Description                                  |
+| ------------------------ | ----------------------------------------------- |
+| `yarn dev`             | Starts the server in development mode          |
+| `yarn build`           | Generates the Prisma Client and compiles TS    |
+| `yarn start`           | Runs the production build                      |
+| `yarn prisma:generate` | Generates the Prisma Client                    |
+| `yarn prisma:migrate`  | Runs Prisma migrations                         |
+| `yarn seed`            | Seeds the database with initial data           |
+| `yarn lint`            | Runs ESLint                                     |
+| `yarn lint:fix`        | Runs ESLint and fixes what it can              |
+| `yarn format`          | Formats the code with Prettier                 |
 
 ## Roadmap
 
-- [ ] Autenticação de usuários (JWT / OAuth Google e Apple)
-- [ ] App mobile (front-end)
-- [ ] Upload de fotos de refeições (reconhecimento por IA)
-- [ ] Histórico de peso e hidratação na API
-- [ ] Publicação nas lojas de aplicativos
+- [ ] User authentication (JWT / Google and Apple OAuth)
+- [ ] Mobile app (front-end)
+- [ ] Meal photo upload (AI recognition)
+- [ ] Weight and hydration history in the API
+- [ ] App store release
 
-## Licença
+## License
 
-Projeto proprietário — código de uso restrito, sem licença open source. Todos os direitos reservados.
+Proprietary project — restricted-use code, no open source license. All rights reserved.
 
-## Autor
+## Author
 
 Geovani Rodrigues
