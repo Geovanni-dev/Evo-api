@@ -1,5 +1,5 @@
 {
-  "name": "NutrIA",
+  "name": "evo",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/server.js",
