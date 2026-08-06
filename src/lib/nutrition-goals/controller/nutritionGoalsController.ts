@@ -5,6 +5,7 @@ import {
   nutritionGoal,
   getNutritionGoal,
 } from '../service/nutritionGoalsService.js';
+import logger from '../../logger.js';
 
 //================== nurtritionGoalConrtoller
 
@@ -20,7 +21,7 @@ export const update = async (req: Request, res: Response) => {
     const result = await nutritionGoal(userId, payload);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Dados de solicitação inválidos',
@@ -47,7 +48,7 @@ export const index = async (req: Request, res: Response) => {
     const result = await getNutritionGoal(userId);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Dados de solicitação inválidos',

@@ -7,6 +7,7 @@ import {
 } from '../services/mealPlanService.js';
 import { generateMealPlan } from '../services/generateMealPlanService.js';
 import { buildMealPlanRequestSchema } from '../schemas/mealPlanSchema.js';
+import logger from '../../logger.js';
 
 //=============================mealplanController
 
@@ -21,7 +22,7 @@ export const indexMealPlan = async (req: Request, res: Response) => {
     const result = await getActiveMealPlan(userId);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -49,9 +50,9 @@ export const updateMealPlan = async (req: Request, res: Response) => {
     const result = await updateActiveMealPlan(userId, payload);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (error instanceof z.ZodError) {
-      console.error('ZodError:', JSON.stringify(error.issues, null, 2));
+      logger.error(error.issues, 'ZodError:');
       return res.status(400).json({
         error: 'Dados da solicitação inválidos',
         details: error.issues,
@@ -77,7 +78,7 @@ export const storeMealPlan = async (req: Request, res: Response) => {
     });
     return res.status(200).json({ ...savedPlan, targets, warnings });
   } catch (error) {
-    console.log('Erro ao gerar dieta', error);
+    logger.error(error, 'Erro ao gerar dieta');
     if (error instanceof Error) {
       if (error.message === 'Chave de API do Gemini não fornecida no .env') {
         return res

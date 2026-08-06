@@ -6,6 +6,7 @@ import type {
 } from '../schemas/mealSchemas.js';
 import { setDailyCache, getDailyCache, deleteDailyCache } from './mealCache.js';
 import type { MealItem } from '../services/mealCache.js';
+import logger from '../../logger.js';
 
 //==================== types
 
@@ -111,7 +112,7 @@ export const createMeal = async (
       try {
         await deleteDailyCache(userId, userLocalDate);
       } catch (error) {
-        console.error('Erro ao deletar o cache:', error);
+        logger.error(error, 'Erro ao deletar o cache:');
       }
       return meal;
     },
@@ -369,7 +370,7 @@ export const updateMeal = async (
   try {
     await deleteDailyCache(userId, date);
   } catch (error) {
-    console.error('Erro ao deletar o cache:', error);
+    logger.error(error, 'Erro ao deletar o cache:');
   }
   return {
     meal: updatedMeal,
@@ -421,7 +422,7 @@ export const deleteMeal = async (mealId: string, userId: string) => {
   try {
     await deleteDailyCache(userId, date);
   } catch (error) {
-    console.error('Erro ao deletar o cache:', error);
+    logger.error(error, 'Erro ao deletar o cache:');
   }
   return { message: 'Refeição deletada com sucesso', total };
 };
@@ -479,7 +480,7 @@ export const deleteItem = async (
   try {
     await deleteDailyCache(userId, date);
   } catch (error) {
-    console.error('Erro ao deletar o cache:', error);
+    logger.error(error, 'Erro ao deletar o cache:');
   }
   return { message: 'Item deletado com sucesso', item };
 };

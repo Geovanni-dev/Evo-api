@@ -13,9 +13,6 @@ class Server {
   public app: Express;
 
   constructor() {
-    if (process.env.NODE_ENV === 'production') {
-      console.log = () => {}; // disable console.log in production
-    }
     this.app = express();
     this.middlewares();
     this.routes();

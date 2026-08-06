@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { chatWithAI } from '../services/aiService.js';
+import logger from '../../logger.js';
 
 //============================== aiControllers
 
@@ -16,7 +17,7 @@ export const storeChat = async (req: Request, res: Response) => {
     });
     return res.status(200).json({ response });
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (
       error instanceof Error &&
       error.message === 'Chave de API do Gemini não fornecida no .env'

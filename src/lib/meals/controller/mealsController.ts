@@ -14,13 +14,14 @@ import {
   getMealSummary,
 } from '../services/mealService.js';
 import { z } from 'zod';
+import logger from '../../logger.js';
 
 //============================== mealsControllers
 
 export const store = async (req: Request, res: Response) => {
   try {
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
+    logger.info(req.headers, 'Headers:');
+    logger.info(req.body, 'Body:');
     const payload = CreateMealSchema.parse(req.body);
     const userId =
       (req.headers['x-user-id'] as string) ||
@@ -31,9 +32,9 @@ export const store = async (req: Request, res: Response) => {
     const meal = await createMeal(payload, userId);
     return res.status(201).json(meal);
   } catch (error) {
-    console.error('ERRO NO POST /meals:', error);
+    logger.error(error, 'ERRO NO POST /meals:');
     if (error instanceof z.ZodError) {
-      console.error('ZodError:', JSON.stringify(error.issues, null, 2));
+      logger.error(error.issues, 'ZodError:');
       return res.status(400).json({
         error: 'Dados da solicitação inválidos',
         details: error.issues,
@@ -69,7 +70,7 @@ export const index = async (req: Request, res: Response) => {
     const result = await getDailyMeals(userId, date);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (
       error instanceof Error &&
       error.message === 'TDEE do usuário nao encontrado'
@@ -105,7 +106,7 @@ export const show = async (req: Request, res: Response) => {
     }
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (error instanceof Error && error.message === 'Refeição não encontrada') {
       return res.status(404).json({ error: 'Refeição não encontrada' });
     } else {
@@ -135,9 +136,9 @@ export const update = async (req: Request, res: Response) => {
     const result = await updateMeal(mealId, userId, payload);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (error instanceof z.ZodError) {
-      console.error('ZodError:', JSON.stringify(error.issues, null, 2));
+      logger.error(error.issues, 'ZodError:');
       return res.status(400).json({
         error: 'Dados da solicitação inválidos',
         details: error.issues,
@@ -146,7 +147,7 @@ export const update = async (req: Request, res: Response) => {
     if (error instanceof Error && error.message === 'Refeição não encontrada') {
       return res.status(404).json({ error: 'Refeição não encontrada' });
     } else {
-      console.error('Erro inesperado em PUT /meals:', error);
+      logger.error(error, 'Erro inesperado em PUT /meals:');
       return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
@@ -172,7 +173,7 @@ export const destroy = async (req: Request, res: Response) => {
     const result = await deleteMeal(mealId, userId);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (error instanceof Error && error.message === 'Refeição não encontrada') {
       return res.status(404).json({ error: 'Refeição não encontrada' });
     } else {
@@ -207,7 +208,7 @@ export const destroyItem = async (req: Request, res: Response) => {
     const result = await deleteItem(mealId, itemId, userId);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     if (error instanceof Error && error.message === 'Item não encontrado') {
       return res.status(404).json({ error: 'Item não encontrado' });
     } else {
@@ -228,7 +229,7 @@ export const indexMealSummary = async (req: Request, res: Response) => {
     const result = await getMealSummary(userId, date);
     return res.status(200).json(result);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
