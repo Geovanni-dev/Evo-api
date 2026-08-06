@@ -31,7 +31,6 @@ export type DailyCacheData = {
     carbs: number;
     fat: number;
   };
-  tdee: number | null;
 };
 
 //============================================= generateKey

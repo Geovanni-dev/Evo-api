@@ -119,6 +119,8 @@ export const createMeal = async (
   );
 };
 
+//=============
+
 export const getDailyMeals = async (userId: string, dateParams?: string) => {
   const serverNow = new Date();
   const date = dateParams
@@ -136,10 +138,40 @@ export const getDailyMeals = async (userId: string, dateParams?: string) => {
         return d;
       })();
 
+  const nutritionGoal = await prisma.userNutritionGoal.findUnique({
+    where: {
+      userId,
+    },
+  });
+
+  /* The cache hit branch also merges in a freshly-fetched TDEE/remaining
+  TDEE is intentionally never part of what's cached here, so it has to be
+  attached on every return path, not just the cache-miss one below*/
   const cached = await getDailyCache(userId, date);
   if (cached) {
-    return cached;
+    const remaining = nutritionGoal
+      ? {
+          calories:
+            nutritionGoal.dailyCalorieTarget - (cached.totals?.calories || 0),
+          protein: nutritionGoal.proteinTarget - (cached.totals?.protein || 0),
+          carbs: nutritionGoal.carbsTarget - (cached.totals?.carbs || 0),
+          fat: nutritionGoal.fatTarget - (cached.totals?.fat || 0),
+        }
+      : null;
+    return {
+      ...cached,
+      tdee: nutritionGoal
+        ? {
+            calories: nutritionGoal.dailyCalorieTarget,
+            protein: nutritionGoal.proteinTarget,
+            carbs: nutritionGoal.carbsTarget,
+            fat: nutritionGoal.fatTarget,
+          }
+        : null,
+      remaining,
+    };
   }
+
   const meals = await prisma.meal.findMany({
     where: {
       userId,
@@ -156,11 +188,25 @@ export const getDailyMeals = async (userId: string, dateParams?: string) => {
       },
     },
   });
-  const nutritionGoal = await prisma.userNutritionGoal.findUnique({
-    where: {
-      userId,
+
+  const mealsSummary = meals.map((meal) => ({
+    mealId: meal.id,
+    mealType: meal.mealType,
+    calories: meal.items.reduce((acc, item) => acc + item.calories, 0),
+  }));
+  const resultCache = {
+    meals,
+    mealsSummary,
+    totals: dailySummary || {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
     },
-  });
+  };
+
+  await setDailyCache(userId, date, resultCache);
+
   const remaining = nutritionGoal
     ? {
         calories:
@@ -170,21 +216,7 @@ export const getDailyMeals = async (userId: string, dateParams?: string) => {
         fat: nutritionGoal.fatTarget - (dailySummary?.fat || 0),
       }
     : null;
-
-  const mealsSummary = meals.map((meal) => ({
-    mealId: meal.id,
-    mealType: meal.mealType,
-    calories: meal.items.reduce((acc, item) => acc + item.calories, 0),
-  }));
   const result = {
-    meals,
-    mealsSummary,
-    totals: dailySummary || {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-    },
     tdee: nutritionGoal
       ? {
           calories: nutritionGoal.dailyCalorieTarget,
@@ -195,11 +227,10 @@ export const getDailyMeals = async (userId: string, dateParams?: string) => {
       : null,
     remaining,
   };
-
-  await setDailyCache(userId, date, result);
-
-  return result;
+  return { ...resultCache, ...result };
 };
+
+//=======================
 
 export const getMealByType = async (
   mealType: string,
@@ -254,6 +285,8 @@ export const getMealByType = async (
     total,
   };
 };
+
+//=================================
 
 export const updateMeal = async (
   mealId: string,

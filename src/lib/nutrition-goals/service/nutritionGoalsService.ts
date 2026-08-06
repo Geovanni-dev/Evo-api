@@ -5,7 +5,6 @@ import {
   getNutritionGoalCache,
   deleteNutritionGoalCache,
 } from './goalCache.js';
-import { deleteDailyCache } from '../../meals/services/mealCache.js';
 
 //============================== nutritionGoalService
 
@@ -35,7 +34,6 @@ export const nutritionGoal = async (
   });
   if (result) {
     await deleteNutritionGoalCache(userId);
-    await deleteDailyCache(userId, new Date());
   }
 
   return result;
