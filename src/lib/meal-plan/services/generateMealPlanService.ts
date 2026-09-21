@@ -323,10 +323,6 @@ ${buildHealthGuidance(healthConditions, dietRestriction)}
 
 Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados fornecidos.`;
 
-  const apiKey = process.env.GOOGLE_GENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('Chave de API do Gemini não fornecida no .env');
-  }
   const response = await deepSeek.chat.completions.create({
     model: 'deepseek-flash',
     reasoning_effort: 'low',
