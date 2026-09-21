@@ -1,5 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
-
+import { genAI } from '../../AI-Models/client.js';
 import { SYSTEM_PROMPT } from '../prompts/systemPrompt.js';
 
 //=================types
@@ -201,12 +200,6 @@ export const chatWithAI = async (params: {
 
     Usuário: ${params.messages}
     AI:`;
-
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('Chave de API do Gemini não fornecida no .env');
-  }
-  const genAI = new GoogleGenAI({ apiKey });
   const response = await genAI.models.generateContent({
     model: 'gemini-3.5-flash-lite',
     contents: fullPrompt,
