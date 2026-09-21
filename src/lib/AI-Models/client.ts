@@ -4,7 +4,7 @@ import { env } from '../Configs/envs.js';
 
 export const genAI = new GoogleGenAI({ apiKey: env.GOOGLE_GENAI_API_KEY });
 
-export const DeepSeek = new OpenAI({
+export const deepSeek = new OpenAI({
   apiKey: env.DEEPSEEK_KEY,
   baseURL: 'https://api.deepseek.com',
 });

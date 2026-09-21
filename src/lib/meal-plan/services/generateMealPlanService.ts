@@ -1,5 +1,5 @@
 import prisma from '../../prisma/prisma.js';
-import { GoogleGenAI } from '@google/genai';
+import { deepSeek } from '../../AI-Models/client.js';
 import { DAYS } from '../schemas/mealPlanSchema.js';
 import { buildMealPlanSchema } from '../schemas/mealPlanSchema.js';
 
@@ -327,12 +327,32 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   if (!apiKey) {
     throw new Error('Chave de API do Gemini não fornecida no .env');
   }
-  const genAI = new GoogleGenAI({ apiKey });
-  const response = await genAI.models.generateContent({
-    model: 'gemini-3.6-flash',
-    contents: prompt,
+  const response = await deepSeek.chat.completions.create({
+    model: 'deepseek-flash',
+    reasoning_effort: 'low',
+    stream: false,
+    response_format: {
+      type: 'json_object',
+    },
+    max_tokens: 12_000,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'Você gera planos alimentares estruturados. Responda exclusivamente com um objeto JSON válido, sem Markdown e sem texto adicional.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
   });
-  const rawText = response.text;
+
+  if (response.choices[0]?.finish_reason === 'length') {
+    throw new Error('Resposta da IA foi interrompida por limite de tokens');
+  }
+
+  const rawText = response.choices[0]?.message.content;
   if (!rawText) {
     throw new Error('Resposta da IA está vazia');
   }

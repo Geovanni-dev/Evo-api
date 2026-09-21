@@ -1,4 +1,4 @@
-import { genAI } from '../../AI-Models/client.js';
+import { deepSeek } from '../../AI-Models/client.js';
 import { SYSTEM_PROMPT } from '../prompts/systemPrompt.js';
 
 //=================types
@@ -200,9 +200,17 @@ export const chatWithAI = async (params: {
 
     Usuário: ${params.messages}
     AI:`;
-  const response = await genAI.models.generateContent({
-    model: 'gemini-3.5-flash-lite',
-    contents: fullPrompt,
+  const response = await deepSeek.chat.completions.create({
+    model: 'deepseek-flash',
+    reasoning_effort: 'low',
+    stream: false,
+    messages: [
+      {
+        role: 'user',
+        content: fullPrompt,
+      },
+    ],
   });
-  return response.text;
+
+  return response.choices[0]?.message.content ?? '';
 };
