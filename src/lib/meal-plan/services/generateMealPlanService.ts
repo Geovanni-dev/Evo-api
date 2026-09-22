@@ -330,7 +330,7 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
     response_format: {
       type: 'json_object',
     },
-    max_tokens: 12_000,
+    max_tokens: 20_000,
     messages: [
       {
         role: 'system',
