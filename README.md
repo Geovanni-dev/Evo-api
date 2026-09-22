@@ -69,17 +69,17 @@ Each module under `src/lib` follows the `controller/`, `routes/`, `services/`, a
 
 ### Environment variables
 
-| Variable               | Description                                    |
-| ----------------------- | ------------------------------------------------ |
-| `DATABASE_URL`         | PostgreSQL connection string                     |
-| `REDIS_URL`            | Redis connection string                          |
-| `GEMINI_API_KEY`       | Google Gemini API key                            |
-| `GOOGLE_GENAI_API_KEY` | Google GenAI API key                             |
-| `DEFAULT_USER_ID`      | Default user ID used while there's no login       |
-| `ADMIN_NAME`           | Admin user name (seed)                           |
-| `ADMIN_EMAIL`          | Admin user email (seed)                          |
-| `ADMIN_PASSWORD`       | Admin user password (seed)                       |
-| `PORT`                 | Server port (optional, defaults to `3000`)       |
+| Variable               | Description                                 |
+| ---------------------- | ------------------------------------------- |
+| `DATABASE_URL`         | PostgreSQL connection string                |
+| `REDIS_URL`            | Redis connection string                     |
+| `GEMINI_API_KEY`       | Google Gemini API key                       |
+| `GOOGLE_GENAI_API_KEY` | Google GenAI API key                        |
+| `DEFAULT_USER_ID`      | Default user ID used while there's no login |
+| `ADMIN_NAME`           | Admin user name (seed)                      |
+| `ADMIN_EMAIL`          | Admin user email (seed)                     |
+| `ADMIN_PASSWORD`       | Admin user password (seed)                  |
+| `PORT`                 | Server port (optional, defaults to `3000`)  |
 
 ### Database
 
@@ -101,42 +101,42 @@ The server runs on `http://localhost:3000` by default.
 
 ## Main endpoints
 
-| Method | Route                              | Description                        |
-| ------ | ---------------------------------- | ----------------------------------- |
-| GET    | `/`                                 | Health check                        |
-| POST   | `/meals`                           | Create a meal                       |
-| GET    | `/meals/daily`                     | List today's meals                  |
-| GET    | `/meals/daily/:mealType`           | Get meal details by type            |
-| GET    | `/meals/summary`                   | Daily nutritional summary           |
-| PUT    | `/meals/daily/:mealId`             | Update a meal                       |
-| DELETE | `/meals/daily/:mealId`             | Delete a meal                       |
-| DELETE | `/meals/daily/:mealId/:itemId`     | Delete an item from a meal          |
-| GET    | `/TDEE`                             | Get nutritional goal                |
-| PUT    | `/TDEE`                             | Create/update nutritional goal      |
-| POST   | `/ai/chat`                         | Chat with the nutrition AI          |
-| GET    | `/meal-plan/active`                | Get the active meal plan            |
-| POST   | `/meal-plan/generate`              | Generate a new meal plan via AI     |
-| PUT    | `/meal-plan`                       | Update the meal plan                |
-| GET    | `/preferences`                     | Get dietary preferences             |
-| PATCH  | `/preferences`                     | Update dietary preferences          |
-| GET    | `/preferences/restrictions`        | Get dietary restrictions            |
-| PATCH  | `/preferences/restrictions`        | Update dietary restrictions         |
+| Method | Route                          | Description                     |
+| ------ | ------------------------------ | ------------------------------- |
+| GET    | `/`                            | Health check                    |
+| POST   | `/meals`                       | Create a meal                   |
+| GET    | `/meals/daily`                 | List today's meals              |
+| GET    | `/meals/daily/:mealType`       | Get meal details by type        |
+| GET    | `/meals/summary`               | Daily nutritional summary       |
+| PUT    | `/meals/daily/:mealId`         | Update a meal                   |
+| DELETE | `/meals/daily/:mealId`         | Delete a meal                   |
+| DELETE | `/meals/daily/:mealId/:itemId` | Delete an item from a meal      |
+| GET    | `/TDEE`                        | Get nutritional goal            |
+| PUT    | `/TDEE`                        | Create/update nutritional goal  |
+| POST   | `/ai/chat`                     | Chat with the nutrition AI      |
+| GET    | `/meal-plan/active`            | Get the active meal plan        |
+| POST   | `/meal-plan/generate`          | Generate a new meal plan via AI |
+| PUT    | `/meal-plan`                   | Update the meal plan            |
+| GET    | `/preferences`                 | Get dietary preferences         |
+| PATCH  | `/preferences`                 | Update dietary preferences      |
+| GET    | `/preferences/restrictions`    | Get dietary restrictions        |
+| PATCH  | `/preferences/restrictions`    | Update dietary restrictions     |
 
 Postman collection available in [`postman/`](./postman).
 
 ## Available scripts
 
-| Command                | Description                                  |
-| ------------------------ | ----------------------------------------------- |
-| `yarn dev`             | Starts the server in development mode          |
-| `yarn build`           | Generates the Prisma Client and compiles TS    |
-| `yarn start`           | Runs the production build                      |
-| `yarn prisma:generate` | Generates the Prisma Client                    |
-| `yarn prisma:migrate`  | Runs Prisma migrations                         |
-| `yarn seed`            | Seeds the database with initial data           |
-| `yarn lint`            | Runs ESLint                                     |
-| `yarn lint:fix`        | Runs ESLint and fixes what it can              |
-| `yarn format`          | Formats the code with Prettier                 |
+| Command                | Description                                 |
+| ---------------------- | ------------------------------------------- |
+| `yarn dev`             | Starts the server in development mode       |
+| `yarn build`           | Generates the Prisma Client and compiles TS |
+| `yarn start`           | Runs the production build                   |
+| `yarn prisma:generate` | Generates the Prisma Client                 |
+| `yarn prisma:migrate`  | Runs Prisma migrations                      |
+| `yarn seed`            | Seeds the database with initial data        |
+| `yarn lint`            | Runs ESLint                                 |
+| `yarn lint:fix`        | Runs ESLint and fixes what it can           |
+| `yarn format`          | Formats the code with Prettier              |
 
 ## Roadmap
 

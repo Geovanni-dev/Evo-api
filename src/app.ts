@@ -3,7 +3,7 @@ import express, { type Express } from 'express';
 import cors from 'cors';
 import mealsRoutes from './lib/meals/routes/mealsRoutes.js';
 import nutritionGoalsRoutes from './lib/nutrition-goals/routes/nutritionGoalsRoutes.js';
-import iaRoutes from './lib/AI/routes/aiRoutes.js';
+import iaRoutes from './lib/Chat/routes/chatRoutes.js';
 import userPreferences from './lib/user-preferences/routes/preferencesRoutes.js';
 import userMealPlan from './lib/meal-plan/routes/mealPlanRoutes.js';
 

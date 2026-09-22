@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { chatWithAI } from '../services/aiService.js';
+import { chatWithAI } from '../services/chatService.js';
 import logger from '../../logger.js';
 
 //============================== aiControllers
