@@ -2,6 +2,14 @@ import prisma from '../../prisma/prisma.js';
 import { deepSeek } from '../../AI-Models/client.js';
 import { DAYS } from '../schemas/mealPlanSchema.js';
 import { buildMealPlanSchema } from '../schemas/mealPlanSchema.js';
+import {
+  DietaForaDaMetaError,
+  MetaNutricionalNaoEncontradaError,
+  PreferenciasNaoEncontradasError,
+  RespostaJsonInvalidaError,
+  RespostaLimiteTokensError,
+  RespostaVaziaError,
+} from '../../errors/errors.js';
 
 //====================== types
 type PreferencesData = {
@@ -159,7 +167,7 @@ export const generateMealPlan = async (userId: string) => {
     },
   });
   if (!nutritionGoal) {
-    throw new Error('Meta nutricional não encontrada');
+    throw new MetaNutricionalNaoEncontradaError();
   }
 
   const preferencesRecord = await prisma.userPreferences.findUnique({
@@ -168,7 +176,7 @@ export const generateMealPlan = async (userId: string) => {
     },
   });
   if (!preferencesRecord) {
-    throw new Error('Preferências nao encontradas');
+    throw new PreferenciasNaoEncontradasError();
   }
 
   const preferences = (preferencesRecord.preferences as PreferencesData) || {};
@@ -321,12 +329,12 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   });
 
   if (response.choices[0]?.finish_reason === 'length') {
-    throw new Error('Resposta da IA foi interrompida por limite de tokens');
+    throw new RespostaLimiteTokensError();
   }
 
   const rawText = response.choices[0]?.message.content;
   if (!rawText) {
-    throw new Error('Resposta da IA está vazia');
+    throw new RespostaVaziaError();
   }
 
   let parsed;
@@ -338,7 +346,7 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   try {
     parsed = JSON.parse(stripJsonFence(rawText));
   } catch (error) {
-    throw new Error('Resposta da IA não é um JSON válido', { cause: error });
+    throw new RespostaJsonInvalidaError(error);
   }
   const week = expandTemplatesIntoWeek(parsed);
   // Validate against the adjusted targets, not the original ones
@@ -357,7 +365,7 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
       ),
     );
 
-    throw new Error('Dieta gerada não bate com o TDEE');
+    throw new DietaForaDaMetaError(result.error.issues);
   }
 
   return { plan: result.data, targets, warnings };

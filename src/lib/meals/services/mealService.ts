@@ -7,6 +7,12 @@ import type {
 import { setDailyCache, getDailyCache, deleteDailyCache } from './mealCache.js';
 import type { MealItem } from '../services/mealCache.js';
 import logger from '../../logger.js';
+import {
+  DataRefeicaoInvalidaError,
+  ItemNaoEncontradoError,
+  RefeicaoNaoEncontradaError,
+  TdeeNaoEncontradoError,
+} from '../../errors/errors.js';
 
 //==================== types
 
@@ -59,9 +65,7 @@ export const createMeal = async (
 
   // meal date must be within -2 to +1 days of the server date
   if (diffDays < -2 || diffDays > 1) {
-    throw new Error(
-      'Data da refeição inválida. Fora da janela permitida (-2 a +1 dias).',
-    );
+    throw new DataRefeicaoInvalidaError();
   }
 
   return await prisma.$transaction(
@@ -72,7 +76,7 @@ export const createMeal = async (
         },
       });
       if (!tdee) {
-        throw new Error('TDEE não encontrado');
+        throw new TdeeNaoEncontradoError();
       }
       const meal = await tx.meal.create({
         data: {
@@ -257,7 +261,7 @@ export const getMealByType = async (
   if (cached) {
     const mealFound = cached.meals.find((m) => m.mealType === mealType);
     if (!mealFound) {
-      throw new Error('Refeição não encontrada');
+      throw new RefeicaoNaoEncontradaError();
     }
     const total = somaMacros(mealFound.items);
 
@@ -277,7 +281,7 @@ export const getMealByType = async (
   });
 
   if (!meal) {
-    throw new Error('Refeição não encontrada');
+    throw new RefeicaoNaoEncontradaError();
   }
   const total = somaMacros(meal.items);
 
@@ -300,7 +304,7 @@ export const updateMeal = async (
     SELECT id FROM "Meal" WHERE id = ${mealId} AND "userId" = ${userId} FOR UPDATE
   `;
       if (locked.length === 0) {
-        throw new Error('Refeição não encontrada');
+        throw new RefeicaoNaoEncontradaError();
       }
 
       const meal = await tx.meal.findFirst({
@@ -312,7 +316,7 @@ export const updateMeal = async (
       });
 
       if (!meal) {
-        throw new Error('Refeição não encontrada');
+        throw new RefeicaoNaoEncontradaError();
       }
       const oldTotal = somaMacros(meal.items);
       const newTotal = somaMacros(payload.items);
@@ -387,7 +391,7 @@ export const deleteMeal = async (mealId: string, userId: string) => {
     include: { items: true },
   });
   if (!meal) {
-    throw new Error('Refeição não encontrada');
+    throw new RefeicaoNaoEncontradaError();
   }
 
   const total = somaMacros(meal.items);
@@ -445,7 +449,7 @@ export const deleteItem = async (
     },
   });
   if (!item) {
-    throw new Error('Item não encontrado');
+    throw new ItemNaoEncontradoError();
   }
 
   const itemTotal = {

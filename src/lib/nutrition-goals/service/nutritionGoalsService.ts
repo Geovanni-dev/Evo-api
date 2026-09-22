@@ -5,6 +5,7 @@ import {
   getNutritionGoalCache,
   deleteNutritionGoalCache,
 } from './goalCache.js';
+import { UsuarioNaoEncontradoError } from '../../errors/errors.js';
 
 //============================== nutritionGoalService
 
@@ -18,7 +19,7 @@ export const nutritionGoal = async (
     },
   });
   if (!user) {
-    throw new Error('Usuário não encontrado');
+    throw new UsuarioNaoEncontradoError();
   }
   const result = await prisma.userNutritionGoal.upsert({
     where: {
