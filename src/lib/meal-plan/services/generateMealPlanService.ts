@@ -325,12 +325,13 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
 
   const response = await deepSeek.chat.completions.create({
     model: 'deepseek-flash',
-    reasoning_effort: 'low',
+    reasoning_effort: 'none',
     stream: false,
     response_format: {
       type: 'json_object',
     },
-    max_tokens: 20_000,
+    max_tokens: 8_000,
+    temperature: 0.2,
     messages: [
       {
         role: 'system',
