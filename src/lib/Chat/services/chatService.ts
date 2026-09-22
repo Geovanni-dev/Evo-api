@@ -1,5 +1,5 @@
 import { deepSeek } from '../../AI-Models/client.js';
-import { SYSTEM_PROMPT } from '../prompts/systemPrompt.js';
+import { chatPrompt } from '../../prompts/chatPrompt.js';
 
 //=================types
 type Context = {
@@ -182,7 +182,7 @@ export const chatWithAI = async (params: {
     .join('\n');
   const fullPrompt = `
      Prompt:
-    ${SYSTEM_PROMPT}
+    ${chatPrompt}
 
     Contexto nutricional:
     ${contextText}

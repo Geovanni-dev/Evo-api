@@ -1,6 +1,8 @@
 export class DataRefeicaoInvalidaError extends Error {
   constructor() {
-    super('Data da refeição inválida. Fora da janela permitida (-2 a +1 dias).');
+    super(
+      'Data da refeição inválida. Fora da janela permitida (-2 a +1 dias).',
+    );
     this.name = 'DataRefeicaoInvalidaError';
   }
 }
