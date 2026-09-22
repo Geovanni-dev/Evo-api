@@ -112,7 +112,7 @@ function buildHealthGuidance(
   }
   if (has('hypertension')) {
     rules.push(
-      '- Hipertensão: evite queijos curados e alimentos em conserva. Inclua na descrição do plano a orientação de preparar sem adicionar sal, temperando com ervas, alho e limão.',
+      '- Hipertensão: evite queijos curados, alimentos em conserva e outras opções ricas em sódio. Priorize alimentos naturalmente pouco processados.',
     );
   }
   if (has('high_cholesterol')) {
@@ -122,7 +122,7 @@ function buildHealthGuidance(
   }
   if (restriction === 'vegan') {
     rules.push(
-      '- Dieta vegana: a vitamina B12 não é obtida em quantidade suficiente por alimentos vegetais. Inclua no plano a observação de que a suplementação de B12 é necessária e deve ser orientada por profissional.',
+      '- Dieta vegana: use somente alimentos marcados como veganos na lista e não inclua ingredientes de origem animal.',
     );
   }
 
@@ -237,15 +237,10 @@ Dados do usuário:
 
 ### 1. Distribuição das calorias e macros por refeição
 
-- Almoço: 30%
-- Jantar: 30%
-- Café da manhã: 15% (ajustável para 20% se o usuário tiver fome matinal ou treinar pela manhã)
-- Lanche da tarde: 15% (ajustável para 20% se o usuário treinar à tarde)
-- Os 10% restantes devem ser alocados para a refeição que o usuário mais precisa (ex: pré-treino com mais carboidratos, ceia com menos carboidratos e mais proteína).
-- Para 5 refeições: distribua os 40% restantes (após almoço e jantar) de forma inteligente, respeitando as regras acima.
-- Para 6 refeições: distribua os 40% restantes igualmente entre as outras 4 refeições (10% cada), mas priorize a refeição que o usuário mais precisa.
-
-A distribuição percentual se aplica igualmente a calorias, proteínas, carboidratos e gorduras.
+- Cada modelo deve conter EXATAMENTE ${payload.preferences.mealsPerDay || 4} refeições.
+- Almoço e jantar devem concentrar aproximadamente 30% das calorias cada.
+- Distribua os 40% restantes entre as demais refeições, garantindo que a soma final do dia alcance 100% da meta.
+- Use essa distribuição como orientação, mas ajuste as quantidades para fechar simultaneamente calorias, proteínas, carboidratos e gorduras dentro das margens exigidas.
 
 ---
 
@@ -257,55 +252,42 @@ ${foodReferenceText}
 
 - Cada item retornado deve incluir também "calories", "protein", "carbs" e "fat" (valores já calculados para a quantidade daquele item, não por 100g).
 - Quantidades devem ser fornecidas em GRAMAS (g) para sólidos e MILILITROS (ml) para líquidos.
-- A soma diária de calorias e macros de cada modelo de dia deve bater a meta do TDEE com margem de erro ≤ 5%.
+- Toda propriedade "quantity" deve ser um número estritamente maior que zero. Nunca retorne quantity igual a zero.
+- Calcule os valores de cada item proporcionalmente à quantidade escolhida usando os valores por 100g ou 100ml da lista.
+- Em cada modelo, a soma das calorias deve ficar entre ${payload.tdee.dailyCalorieTarget - 50} e ${payload.tdee.dailyCalorieTarget + 50} kcal.
+- Em cada modelo, a proteína deve ficar entre ${Math.max(0, payload.tdee.proteinTarget - Math.max(5, payload.tdee.proteinTarget * 0.05))} e ${payload.tdee.proteinTarget + Math.max(5, payload.tdee.proteinTarget * 0.05)}g.
+- Em cada modelo, os carboidratos devem ficar entre ${Math.max(0, payload.tdee.carbsTarget - Math.max(5, payload.tdee.carbsTarget * 0.05))} e ${payload.tdee.carbsTarget + Math.max(5, payload.tdee.carbsTarget * 0.05)}g.
+- Em cada modelo, a gordura deve ficar entre ${Math.max(0, payload.tdee.fatTarget - Math.max(5, payload.tdee.fatTarget * 0.05))} e ${payload.tdee.fatTarget + Math.max(5, payload.tdee.fatTarget * 0.05)}g.
+- Antes de responder, some novamente todos os itens de cada modelo e ajuste suas quantidades até que TODAS as quatro metas estejam dentro dessas margens.
 
 ---
 
-### 3. Substituição de alimentos (recalculo inteligente)
+### 3. Formato de saída (JSON)
 
-Quando o usuário pedir para trocar um alimento específico (ex: "troque o arroz por batata no almoço de terça"):
-- A IA deve recalcular APENAS a quantidade do novo alimento para que os macros daquela refeição permaneçam os mesmos.
-- Mantenha todos os outros alimentos e quantidades inalterados.
-- Recalcule a quantidade do novo alimento com base na equivalência calórica e de macros do alimento removido.
-- Se a substituição afetar o total diário, ajuste as quantidades da refeição substituída para que o total do dia continue batendo o TDEE.
-- NÃO regenerar a dieta inteira – apenas o alimento trocado.
-- A substituição deve ser aplicada àquele dia específico, e não para todas as semanas (a menos que o usuário peça para aplicar permanentemente).
-
----
-
-### 4. Formato de saída (JSON)
-
-Retorne APENAS um JSON válido (sem texto adicional), com os 4 modelos de dia. Estrutura:
-
-{
-  "dayA": {
-    "meals": [
-      { "mealType": "cafe_da_manha", "items": [ { "name": "Pão integral", "quantity": 60, "unit": "g", "calories": 152, "protein": 5.6, "carbs": 30, "fat": 2.2 } ] },
-      { "mealType": "almoco", "items": [ { "name": "Arroz branco cozido", "quantity": 150, "unit": "g", "calories": 192, "protein": 3.8, "carbs": 42.2, "fat": 0.3 }, { "name": "Peito de frango grelhado", "quantity": 120, "unit": "g", "calories": 191, "protein": 38.4, "carbs": 0, "fat": 3 } ] },
-      { "mealType": "lanche_da_tarde", "items": [ { "name": "Banana prata", "quantity": 100, "unit": "g", "calories": 98, "protein": 1.3, "carbs": 26, "fat": 0.1 } ] },
-      { "mealType": "jantar", "items": [ { "name": "Tilápia filé grelhado", "quantity": 150, "unit": "g", "calories": 144, "protein": 30.2, "carbs": 0, "fat": 2.6 } ] }
-    ]
-  },
-  "dayB": { ... },
-  "dayC": { ... },
-  "dayD": { ... }
-}
+Retorne APENAS um objeto JSON válido, sem Markdown, comentários ou texto adicional.
+- O objeto raiz deve conter exatamente as chaves "dayA", "dayB", "dayC" e "dayD".
+- Cada dia deve conter somente a propriedade "meals", que é uma lista de refeições.
+- Cada refeição deve conter somente "mealType" e "items".
+- Cada item deve conter exatamente: "name", "quantity", "unit", "calories", "protein", "carbs" e "fat".
+- "mealType" deve ser um destes valores: "cafe_da_manha", "lanche_da_manha", "almoco", "lanche_da_tarde", "pre_treino", "pos_treino", "jantar" ou "ceia".
+- Todos os campos nutricionais e "quantity" devem ser números, não strings.
+- Não inclua totais diários, explicações, observações ou outras propriedades no JSON.
 
 ---
 
-### 5. Restrições adicionais
+### 4. Restrições adicionais
 
 - Respeite as preferências e restrições informadas.
 - Varie os alimentos entre os modelos de dia para evitar monotonia.
 - Inclua fontes de proteína, carboidratos complexos e gorduras saudáveis em todas as refeições principais.
 - Se o usuário não informar preferências, use alimentos comuns e variados.
-- Cada modelo de dia gerado será repetido por várias semanas. Apenas substitua um alimento quando o usuário solicitar, sem regenerar os modelos inteiros.
+- Cada modelo de dia gerado será repetido por várias semanas.
 
 ---
 
-### 6. Regras de composição por perfil e tipo de alimento
+### 5. Regras de composição por perfil e tipo de alimento
 
-- Alimentos de folha/salada crus (alface, tomate, pepino, repolho) são sempre "à vontade", sem gramatura fixa.
+- Alimentos de folha e saladas cruas devem receber uma porção estimada em gramas, sempre maior que zero, assim como os demais alimentos.
 - Vegetais cozidos (cenoura, brócolis, abobrinha, couve, beterraba) continuam com porção em gramas normalmente.
 - Se a categoria da dieta for "fit": use "pre_treino" e "pos_treino" NO LUGAR de "lanche_da_manha" e "ceia", em TODOS os 4 modelos de dia. Elas SUBSTITUEM essas refeições, não se somam a elas — o total de refeições do dia deve continuar igual ao número informado.
 - "pre_treino" e "pos_treino" não têm horário fixo: são consumidas antes e depois do treino, no horário em que o usuário treinar.
@@ -313,13 +295,6 @@ Retorne APENAS um JSON válido (sem texto adicional), com os 4 modelos de dia. E
 - Suplementos (whey, hipercalórico, albumina, barra de proteína) só podem aparecer se o uso de suplementos estiver informado. Caso contrário, use fonte de proteína real da mesma categoria.
 - No máximo DUAS leguminosas diferentes (feijões, lentilha, ervilha, tremoço) por dia. Empilhar três ou mais fecha os macros na conta, mas gera volume e fibra excessivos.
 ${buildHealthGuidance(healthConditions, dietRestriction)}
----
-
-### 8. Linguagem do plano
-
-- Descreva o plano como apoio a hábitos alimentares, nunca como tratamento.
-- NÃO afirme que o plano controla, trata, cura ou previne qualquer doença.
-- Quando houver condição de saúde informada, mencione que o plano não substitui acompanhamento profissional.
 
 Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados fornecidos.`;
 
