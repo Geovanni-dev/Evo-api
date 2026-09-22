@@ -371,9 +371,18 @@ Agora, gere os 4 modelos de dia (dayA, dayB, dayC, dayD) com base nos dados forn
   const result = schema.safeParse(week);
 
   if (!result.success) {
-    throw new Error('Dieta gerada não bate com o TDEE', {
-      cause: result.error.issues,
-    });
+    console.error(
+      JSON.stringify(
+        {
+          targets,
+          issues: result.error.issues,
+        },
+        null,
+        2,
+      ),
+    );
+
+    throw new Error('Dieta gerada não bate com o TDEE');
   }
 
   return { plan: result.data, targets, warnings };
