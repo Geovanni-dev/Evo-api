@@ -158,18 +158,52 @@ function nutritionPerGram(food: FoodReference): Nutrition {
 }
 
 export function fitDayPortions(day: ResolvedDay, targets: Targets) {
-  const portions: PortionWithLimits[] = day.meals.flatMap((meal) =>
-    meal.foods.map((food) => {
-      const { min, max } = portionRange(food);
+  const distribution: Record<ResolvedDay['meals'][number]['mealType'], number> =
+    {
+      cafe_da_manha: 20,
+      lanche_da_manha: 10,
+      almoco: 30,
+      lanche_da_tarde: 10,
+      pre_treino: 10,
+      pos_treino: 10,
+      jantar: 30,
+      ceia: 10,
+    };
 
-      return {
-        food,
-        grams: (min + max) / 2,
-        min,
-        max,
-      };
-    }),
+  const totalWeight = day.meals.reduce(
+    (sum, meal) => sum + distribution[meal.mealType],
+    0,
   );
+
+  const mealGoals = day.meals.map((meal) => {
+    const calories =
+      (targets.dailyCalorieTarget * distribution[meal.mealType]) / totalWeight;
+    const tolerance = Math.max(100, calories * 0.2);
+    const isMainMeal = meal.mealType === 'almoco' || meal.mealType === 'jantar';
+
+    return {
+      calories,
+      tolerance,
+      proteinMin: isMainMeal ? targets.proteinTarget * 0.25 : 0,
+      calorieWeight: 1 / tolerance ** 2,
+      proteinWeight: 1 / Math.max(5, targets.proteinTarget * 0.05) ** 2,
+    };
+  });
+
+  const portions: (PortionWithLimits & { mealIndex: number })[] =
+    day.meals.flatMap((meal, mealIndex) =>
+      meal.foods.map((food) => {
+        const { min, max } = portionRange(food);
+
+        return {
+          food,
+          grams: (min + max) / 2,
+          min,
+          max,
+          mealIndex,
+        };
+      }),
+    );
 
   const goal: Nutrition = {
     calories: targets.dailyCalorieTarget,
@@ -196,8 +230,25 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
     nutritionPerGram(portion.food),
   );
   const current = calculateTotal(portions);
+  const mealTotals = day.meals.map(() => ({
+    calories: 0,
+    protein: 0,
+  }));
 
-  for (let pass = 0; pass < 5; pass++) {
+  for (let index = 0; index < portions.length; index++) {
+    const portion = portions[index];
+    const coefficient = coefficients[index];
+
+    if (!portion || !coefficient) continue;
+
+    const mealTotal = mealTotals[portion.mealIndex];
+    if (!mealTotal) continue;
+
+    mealTotal.calories += coefficient.calories * portion.grams;
+    mealTotal.protein += coefficient.protein * portion.grams;
+  }
+
+  for (let pass = 0; pass < 6; pass++) {
     for (let iteration = 0; iteration < 1000; iteration++) {
       let largestChange = 0;
 
@@ -206,6 +257,11 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
         const coefficient = coefficients[index];
 
         if (!portion || !coefficient) continue;
+
+        const mealGoal = mealGoals[portion.mealIndex];
+        const mealTotal = mealTotals[portion.mealIndex];
+
+        if (!mealGoal || !mealTotal) continue;
 
         let numerator = 0;
         let denominator = 0;
@@ -217,6 +273,22 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
             weights[nutrient];
 
           denominator += coefficient[nutrient] ** 2 * weights[nutrient];
+        }
+
+        numerator +=
+          coefficient.calories *
+          (mealGoal.calories - mealTotal.calories) *
+          mealGoal.calorieWeight;
+
+        denominator += coefficient.calories ** 2 * mealGoal.calorieWeight;
+
+        if (mealTotal.protein < mealGoal.proteinMin) {
+          numerator +=
+            coefficient.protein *
+            (mealGoal.proteinMin - mealTotal.protein) *
+            mealGoal.proteinWeight;
+
+          denominator += coefficient.protein ** 2 * mealGoal.proteinWeight;
         }
 
         if (denominator === 0) continue;
@@ -233,23 +305,52 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
         for (const nutrient of NUTRIENTS) {
           current[nutrient] += coefficient[nutrient] * change;
         }
+
+        mealTotal.calories += coefficient.calories * change;
+        mealTotal.protein += coefficient.protein * change;
       }
 
       if (largestChange < 0.001) break;
     }
 
-    if (
-      NUTRIENTS.every(
-        (nutrient) =>
-          Math.abs(current[nutrient] - goal[nutrient]) <= tolerance[nutrient],
-      )
-    ) {
-      break;
-    }
+    const dailyOk = NUTRIENTS.every(
+      (nutrient) =>
+        Math.abs(current[nutrient] - goal[nutrient]) <= tolerance[nutrient],
+    );
+
+    const mealsOk = mealGoals.every((mealGoal, index) => {
+      const mealTotal = mealTotals[index];
+
+      return (
+        mealTotal !== undefined &&
+        Math.abs(mealTotal.calories - mealGoal.calories) <=
+          mealGoal.tolerance &&
+        mealTotal.protein >= mealGoal.proteinMin
+      );
+    });
+
+    if (dailyOk && mealsOk) break;
 
     for (const nutrient of NUTRIENTS) {
       if (Math.abs(current[nutrient] - goal[nutrient]) > tolerance[nutrient]) {
         weights[nutrient] *= 5;
+      }
+    }
+
+    for (let index = 0; index < mealGoals.length; index++) {
+      const mealGoal = mealGoals[index];
+      const mealTotal = mealTotals[index];
+
+      if (!mealGoal || !mealTotal) continue;
+
+      if (
+        Math.abs(mealTotal.calories - mealGoal.calories) > mealGoal.tolerance
+      ) {
+        mealGoal.calorieWeight *= 5;
+      }
+
+      if (mealTotal.protein < mealGoal.proteinMin) {
+        mealGoal.proteinWeight *= 5;
       }
     }
   }
@@ -259,13 +360,47 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
   }
 
   const finalTotal = calculateTotal(portions);
-  const outsideTolerance = NUTRIENTS.some(
+  const finalMealTotals = day.meals.map(() => ({
+    calories: 0,
+    protein: 0,
+  }));
+
+  for (const portion of portions) {
+    const mealTotal = finalMealTotals[portion.mealIndex];
+    if (!mealTotal) continue;
+
+    const nutrition = calculateFoodNutrition(portion.food, portion.grams);
+
+    mealTotal.calories += nutrition.calories;
+    mealTotal.protein += nutrition.protein;
+  }
+
+  const outsideDailyTolerance = NUTRIENTS.some(
     (nutrient) =>
       Math.abs(finalTotal[nutrient] - goal[nutrient]) > tolerance[nutrient],
   );
 
-  if (outsideTolerance) {
-    throw new DietaForaDaMetaError({ goal, finalTotal });
+  const outsideMealTolerance = mealGoals.some((mealGoal, index) => {
+    const mealTotal = finalMealTotals[index];
+
+    return (
+      !mealTotal ||
+      Math.abs(mealTotal.calories - mealGoal.calories) > mealGoal.tolerance ||
+      mealTotal.protein < mealGoal.proteinMin - 1
+    );
+  });
+
+  if (outsideDailyTolerance || outsideMealTolerance) {
+    throw new DietaForaDaMetaError({
+      goal,
+      finalTotal,
+      meals: mealGoals.map((mealGoal, index) => ({
+        targetCalories: mealGoal.calories,
+        calories: finalMealTotals[index]?.calories,
+        minProtein: mealGoal.proteinMin,
+        protein: finalMealTotals[index]?.protein,
+      })),
+    });
   }
 
   let index = 0;

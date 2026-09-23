@@ -193,13 +193,13 @@ export const generateMealPlan = async (userId: string) => {
 
   const response = await deepSeek.chat.completions.create({
     model: 'deepseek-flash',
-    reasoning_effort: 'max',
+    reasoning_effort: 'none',
     stream: false,
     response_format: {
       type: 'json_object',
     },
-    //max_tokens: 8_000,
-    //temperature: 0.2,
+    max_tokens: 8_000,
+    temperature: 0.2,
     messages: [
       {
         role: 'system',
