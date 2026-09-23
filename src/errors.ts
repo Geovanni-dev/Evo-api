@@ -78,3 +78,5 @@ export class DietaForaDaMetaError extends Error {
 }
 
 export class AlimentoNaoPermitidoError extends Error {}
+
+export class QuantidadeInvalidaError extends Error {}
