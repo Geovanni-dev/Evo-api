@@ -13,7 +13,7 @@ import {
   RespostaJsonInvalidaError,
   RespostaLimiteTokensError,
   RespostaVaziaError,
-} from '../../errors/errors.js';
+} from '../../../errors.js';
 
 //====================== types
 type PreferencesData = {

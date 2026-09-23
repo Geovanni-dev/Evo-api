@@ -12,7 +12,7 @@ import {
   ItemNaoEncontradoError,
   RefeicaoNaoEncontradaError,
   TdeeNaoEncontradoError,
-} from '../../errors/errors.js';
+} from '../../../errors.js';
 
 //==================== types
 

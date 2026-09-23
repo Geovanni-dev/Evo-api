@@ -5,7 +5,7 @@ import {
   getNutritionGoalCache,
   deleteNutritionGoalCache,
 } from './goalCache.js';
-import { UsuarioNaoEncontradoError } from '../../errors/errors.js';
+import { UsuarioNaoEncontradoError } from '../../../errors.js';
 
 //============================== nutritionGoalService
 

@@ -76,3 +76,5 @@ export class DietaForaDaMetaError extends Error {
     this.name = 'DietaForaDaMetaError';
   }
 }
+
+export class AlimentoNaoPermitidoError extends Error {}
