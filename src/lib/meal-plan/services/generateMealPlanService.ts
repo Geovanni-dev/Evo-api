@@ -14,6 +14,7 @@ import {
   RespostaLimiteTokensError,
   RespostaVaziaError,
 } from '../../../errors.js';
+import { buildFinalTemplates } from './validateProposedMealPlan.js';
 
 //====================== types
 type PreferencesData = {
@@ -151,7 +152,7 @@ export const generateMealPlan = async (userId: string) => {
   const dietRestriction = normalizeDietRestriction(preferences);
   const healthConditions = restrictions.healthConditions ?? [];
 
-  // Kidney disease lowers protein while the fit routine raises it: warn instead of silently picking a side
+  // Kidney disease lowers protein while the fit routine raises it warn instead of silently picking a side
   const conflictWarnings =
     healthConditions.includes('ckd') && preferences.dietCategory === 'fit'
       ? [
@@ -231,8 +232,9 @@ export const generateMealPlan = async (userId: string) => {
   } catch (error) {
     throw new RespostaJsonInvalidaError(error);
   }
-  const week = expandTemplatesIntoWeek(parsed);
-  // Validate against the adjusted targets, not the original ones
+  const templates = buildFinalTemplates(parsed, foodReference, targets);
+  const week = expandTemplatesIntoWeek(templates);
+  // validate against the adjusted targets, not the original ones
   const schema = buildMealPlanSchema(targets);
   const result = schema.safeParse(week);
 
