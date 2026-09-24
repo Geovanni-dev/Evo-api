@@ -29,29 +29,106 @@ type Nutrition = {
 
 type PortionWithLimits = Portion & {
   min: number;
+  preferred: number;
   max: number;
 };
 
 const NUTRIENTS = ['calories', 'protein', 'carbs', 'fat'] as const;
 
+function limitsVariety(food: FoodReference) {
+  return (
+    food.category === 'fruit' ||
+    food.category === 'dairy' ||
+    (food.category === 'fat' && food.fatPer100g < 80)
+  );
+}
+
 // ------------ Validation and calculations
 
 export function validateProposedMealPlan(
   raw: unknown,
-  allowedFoods: { id: string }[],
+  allowedFoods: FoodReference[],
 ) {
   const proposal = proposedMealPlanSchema.parse(raw);
-  const allowedIds = new Set(allowedFoods.map((food) => food.id));
+  const foodsById = buildFoodsById(allowedFoods);
+  const selectedIds = new Set<string>();
 
   for (const day of Object.values(proposal)) {
     for (const meal of day.meals) {
       for (const item of meal.items) {
-        // a valid UUID must also belong to the foods allowed for this user
-        if (!allowedIds.has(item.foodId)) {
+        if (!foodsById.has(item.foodId)) {
           throw new AlimentoNaoPermitidoError(
             `Alimento não permitido: ${item.foodId}`,
           );
         }
+        selectedIds.add(item.foodId);
+      }
+    }
+  }
+
+  const selectedFoods = allowedFoods.filter((food) => selectedIds.has(food.id));
+  const foodDays = new Map<string, Set<string>>();
+
+  for (const [dayName, day] of Object.entries(proposal)) {
+    const dayCounts = new Map<string, number>();
+
+    for (const meal of day.meals) {
+      for (const item of meal.items) {
+        let food = getFoodById(item.foodId, foodsById);
+
+        if (!limitsVariety(food)) {
+          continue;
+        }
+
+        const days = foodDays.get(food.id);
+        const repeatedInDay = (dayCounts.get(food.id) ?? 0) >= 2;
+        const repeatedAcrossDays =
+          (days?.size ?? 0) >= 3 && !days?.has(dayName);
+
+        if (repeatedInDay || repeatedAcrossDays) {
+          const replacement = selectedFoods
+            .filter((candidate) => {
+              const candidateDays = foodDays.get(candidate.id);
+              const calorieRatio =
+                candidate.caloriesPer100g / Math.max(food.caloriesPer100g, 1);
+
+              return (
+                candidate.id !== food.id &&
+                candidate.category === food.category &&
+                limitsVariety(candidate) &&
+                candidate.defaultUnit === food.defaultUnit &&
+                calorieRatio >= 0.5 &&
+                calorieRatio <= 2 &&
+                !meal.items.some(
+                  (mealItem) =>
+                    mealItem !== item && mealItem.foodId === candidate.id,
+                ) &&
+                (dayCounts.get(candidate.id) ?? 0) < 2 &&
+                ((candidateDays?.size ?? 0) < 3 || candidateDays?.has(dayName))
+              );
+            })
+            .sort((a, b) => {
+              const score = (candidate: FoodReference) =>
+                (dayCounts.get(candidate.id) ?? 0) * 10 +
+                (foodDays.get(candidate.id)?.size ?? 0) * 5 +
+                Math.abs(candidate.caloriesPer100g - food.caloriesPer100g) /
+                  Math.max(food.caloriesPer100g, 1) +
+                Math.abs(candidate.proteinPer100g - food.proteinPer100g) / 20 +
+                Math.abs(candidate.carbsPer100g - food.carbsPer100g) / 20 +
+                Math.abs(candidate.fatPer100g - food.fatPer100g) / 20;
+              return score(a) - score(b);
+            })[0];
+
+          if (replacement) {
+            item.foodId = replacement.id;
+            food = replacement;
+          }
+        }
+
+        dayCounts.set(food.id, (dayCounts.get(food.id) ?? 0) + 1);
+        const usedDays = foodDays.get(food.id) ?? new Set<string>();
+        usedDays.add(dayName);
+        foodDays.set(food.id, usedDays);
       }
     }
   }
@@ -134,18 +211,53 @@ export function resolveDayFoods(
 type ResolvedDay = ReturnType<typeof resolveDayFoods>;
 
 function portionRange(food: FoodReference) {
-  if (food.category === 'protein') return { min: 40, max: 250 };
-  if (food.category === 'carb') return { min: 30, max: 300 };
-  if (food.category === 'fruit') return { min: 50, max: 250 };
-  if (food.category === 'vegetable') return { min: 30, max: 250 };
-  if (food.category === 'dairy') return { min: 60, max: 300 };
-  if (food.category === 'supplement') return { min: 20, max: 80 };
+  const name = food.name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
-  if (food.category === 'fat') {
-    return food.fatPer100g >= 80 ? { min: 5, max: 30 } : { min: 20, max: 150 };
+  if (/\b(feijao|lentilha|ervilha|tremoco)\b/.test(name)) {
+    return { min: 60, preferred: 100, max: 180 };
   }
 
-  return { min: 10, max: 250 };
+  if (food.category === 'protein') {
+    return { min: 40, preferred: 140, max: 250 };
+  }
+
+  if (food.category === 'carb') {
+    return food.caloriesPer100g >= 200
+      ? { min: 25, preferred: 60, max: 150 }
+      : { min: 30, preferred: 150, max: 300 };
+  }
+
+  if (food.category === 'fruit') {
+    return { min: 80, preferred: 130, max: 250 };
+  }
+
+  if (food.category === 'vegetable') {
+    return { min: 80, preferred: 120, max: 250 };
+  }
+
+  if (food.category === 'dairy') {
+    return food.caloriesPer100g >= 140
+      ? { min: 20, preferred: 45, max: 120 }
+      : { min: 80, preferred: 170, max: 300 };
+  }
+
+  if (food.category === 'supplement') {
+    return { min: 20, preferred: 35, max: 80 };
+  }
+
+  if (food.category === 'fat') {
+    if (food.fatPer100g >= 80) {
+      return { min: 5, preferred: 10, max: 30 };
+    }
+    return food.fatPer100g >= 35
+      ? { min: 15, preferred: 25, max: 70 }
+      : { min: 40, preferred: 100, max: 200 };
+  }
+
+  return { min: 20, preferred: 100, max: 250 };
 }
 
 function nutritionPerGram(food: FoodReference): Nutrition {
@@ -193,12 +305,13 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
   const portions: (PortionWithLimits & { mealIndex: number })[] =
     day.meals.flatMap((meal, mealIndex) =>
       meal.foods.map((food) => {
-        const { min, max } = portionRange(food);
+        const { min, preferred, max } = portionRange(food);
 
         return {
           food,
-          grams: (min + max) / 2,
+          grams: preferred,
           min,
+          preferred,
           max,
           mealIndex,
         };
@@ -290,6 +403,11 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
 
           denominator += coefficient.protein ** 2 * mealGoal.proteinWeight;
         }
+
+        const preferredWeight =
+          0.15 / Math.max(20, (portion.max - portion.min) / 2) ** 2;
+        numerator += (portion.preferred - portion.grams) * preferredWeight;
+        denominator += preferredWeight;
 
         if (denominator === 0) continue;
 

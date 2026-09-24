@@ -126,6 +126,9 @@ Retorne APENAS um objeto JSON válido, sem Markdown, comentários ou texto adici
 
 - Respeite as preferências e restrições informadas.
 - Varie os alimentos entre os modelos de dia para evitar monotonia.
+- Evite usar a mesma fruta, laticínio ou fonte de gordura que não seja óleo mais de duas vezes no mesmo modelo de dia.
+- Varie as combinações de alimentos das refeições entre dayA, dayB, dayC e dayD, especialmente quando tiverem o mesmo mealType.
+- Procure distribuir cada fruta, laticínio e fonte de gordura que não seja óleo em até três dos quatro modelos de dia. Essa orientação não se aplica a azeite e óleos.
 - Inclua fontes de proteína, carboidratos complexos e gorduras saudáveis nas refeições principais.
 - Se o usuário não informar preferências, use alimentos comuns e variados.
 - Cada modelo de dia gerado será repetido por várias semanas.

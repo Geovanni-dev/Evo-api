@@ -8,6 +8,10 @@ import {
 import { generateMealPlan } from '../services/generateMealPlanService.js';
 import { buildMealPlanRequestSchema } from '../schemas/mealPlanSchema.js';
 import logger from '../../logger.js';
+import {
+  AlimentosInsuficientesError,
+  RestricaoAlimentarNaoSuportadaError,
+} from '../../../errors.js';
 
 //=============================mealplanController
 
@@ -79,6 +83,12 @@ export const storeMealPlan = async (req: Request, res: Response) => {
     return res.status(200).json({ ...savedPlan, targets, warnings });
   } catch (error) {
     logger.error(error, 'Erro ao gerar dieta');
+    if (
+      error instanceof RestricaoAlimentarNaoSuportadaError ||
+      error instanceof AlimentosInsuficientesError
+    ) {
+      return res.status(422).json({ error: error.message });
+    }
     if (error instanceof Error) {
       if (error.message === 'Chave de API do Gemini não fornecida no .env') {
         return res

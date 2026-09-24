@@ -80,3 +80,17 @@ export class DietaForaDaMetaError extends Error {
 export class AlimentoNaoPermitidoError extends Error {}
 
 export class QuantidadeInvalidaError extends Error {}
+
+export class RestricaoAlimentarNaoSuportadaError extends Error {
+  constructor(restriction: string) {
+    super(`Restrição alimentar não suportada: ${restriction}`);
+    this.name = 'RestricaoAlimentarNaoSuportadaError';
+  }
+}
+
+export class AlimentosInsuficientesError extends Error {
+  constructor() {
+    super('Não há alimentos permitidos suficientes para gerar a dieta');
+    this.name = 'AlimentosInsuficientesError';
+  }
+}

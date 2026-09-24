@@ -15,6 +15,7 @@ import {
   RespostaVaziaError,
 } from '../../../errors.js';
 import { buildFinalTemplates } from './validateProposedMealPlan.js';
+import { filterMealPlanFoods } from './filterMealPlanFoods.js';
 
 //====================== types
 type PreferencesData = {
@@ -171,12 +172,26 @@ export const generateMealPlan = async (userId: string) => {
   );
   const warnings = [...adjustWarnings, ...conflictWarnings];
 
-  const foodReference = await prisma.foodReference.findMany({
+  if (
+    (restrictions.allergies?.length ?? 0) > 0 ||
+    (restrictions.intolerances?.length ?? 0) > 0
+  ) {
+    warnings.push(
+      'Confira os ingredientes e avisos de alérgenos nos rótulos antes de consumir alimentos industrializados.',
+    );
+  }
+
+  const availableFoods = await prisma.foodReference.findMany({
     where: {
       ...(dietRestriction === 'vegan' && { isVegan: true }),
       ...(dietRestriction === 'vegetarian' && { isVegetarian: true }),
     },
   });
+  const foodReference = filterMealPlanFoods(
+    availableFoods,
+    preferences,
+    restrictions,
+  );
 
   const payload = {
     tdee: targets,
