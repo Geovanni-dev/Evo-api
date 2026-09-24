@@ -1,6 +1,7 @@
+import { RespostaVaziaError } from '../../../errors.js';
 import { deepSeek } from '../../AI-Models/client.js';
 import { chatPrompt } from '../../prompts/chatPrompt.js';
-
+import { getChatCache, setChatCache } from './chatCache.js';
 //=================types
 type Context = {
   calories: number;
@@ -135,7 +136,7 @@ type Context = {
 export const chatWithAI = async (params: {
   messages: string;
   context: Context;
-  history: { role: string; text: string }[];
+  userId: string;
 }) => {
   const contextText = params.context
     ? `Estado nutricional atual:
@@ -175,11 +176,12 @@ export const chatWithAI = async (params: {
         .join('\n')
     : 'Nenhuma dieta ativa.';
 
-  const historyText = params.history
-    .slice(-6)
-    .filter((msg) => msg.role !== 'system')
-    .map((msg) => `${msg.role === 'user' ? 'Usuário' : 'AI'}: ${msg.text}`)
+  const history = await getChatCache(params.userId);
+  const historyText = history
+    .slice(-20)
+    .map((turn) => `${turn.role === 'user' ? 'Usuário' : 'Evo'}: ${turn.text}`)
     .join('\n');
+
   const fullPrompt = `
      Prompt:
     ${chatPrompt}
@@ -211,6 +213,11 @@ export const chatWithAI = async (params: {
       },
     ],
   });
-
-  return response.choices[0]?.message.content ?? '';
+  const texto = response.choices[0]?.message?.content;
+  if (!texto) {
+    throw new RespostaVaziaError();
+  }
+  await setChatCache(params.userId, 'user', params.messages);
+  await setChatCache(params.userId, 'assistant', texto);
+  return texto;
 };

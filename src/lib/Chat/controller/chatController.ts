@@ -6,14 +6,15 @@ import logger from '../../logger.js';
 
 export const storeChat = async (req: Request, res: Response) => {
   try {
-    const { message, context = null, history = [] } = req.body;
+    const { message, context = null } = req.body;
     if (!message) {
       return res.status(400).json({ error: 'Mensagem não fornecida' });
     }
+    const userId = req.headers['x-user-id'] as string;
     const response = await chatWithAI({
       messages: message,
       context,
-      history,
+      userId,
     });
     return res.status(200).json({ response });
   } catch (error) {
