@@ -74,6 +74,9 @@ export function buildMealPlanPrompt(
         `${f.id} | ${f.name} (${f.category}): ${f.caloriesPer100g}kcal, P:${f.proteinPer100g}g, C:${f.carbsPer100g}g, G:${f.fatPer100g}g por 100g`,
     )
     .join('\n');
+  const mealCount =
+    payload.preferences.mealsPerDay ??
+    (payload.preferences.dietCategory === 'fit' ? 5 : 4);
 
   return `
   Sua tarefa é selecionar os alimentos de 4 modelos de dia (dayA, dayB, dayC, dayD) para o usuário. O backend definirá as porções, calculará os nutrientes e distribuirá os modelos pelos 7 dias da semana, repetidos por 4 semanas (1 mês).
@@ -87,13 +90,13 @@ Dados do usuário:
 - Restrições: ${JSON.stringify(payload.restrictions)}
 - Categoria da dieta: ${payload.preferences.dietCategory || 'normal'}
 - Uso de suplementos: ${payload.preferences.suplementUse || 'não informado'}
-- Número de refeições por dia: ${payload.preferences.mealsPerDay || 4} (4, 5 ou 6)
+- Número de refeições por dia: ${mealCount} (4, 5 ou 6)
 
 ---
 
 ### 1. Composição dos modelos de dia
 
-- Cada modelo deve conter EXATAMENTE ${payload.preferences.mealsPerDay || 4} refeições.
+- Cada modelo deve conter EXATAMENTE ${mealCount} refeições.
 - Use as metas calóricas e de macronutrientes para orientar a ESCOLHA dos alimentos, sem fazer cálculos ou definir porções.
 - Inclua fontes de proteína nas refeições principais e combine-as com fontes apropriadas de carboidratos, vegetais e gorduras. Não monte almoço ou jantar apenas com fontes de carboidrato.
 - Distribua os tipos de alimento de forma coerente ao longo do dia, considerando que o backend ajustará as quantidades para atender às metas.
@@ -138,8 +141,10 @@ Retorne APENAS um objeto JSON válido, sem Markdown, comentários ou texto adici
 ### 5. Regras de composição por perfil e tipo de alimento
 
 - Inclua vegetais e folhas quando forem adequados à refeição; não estime suas porções.
-- Se a categoria da dieta for "fit": prefira "pre_treino" e "pos_treino" no lugar de lanches, sem aumentar o número de refeições. Inclua ambos quando couberem no total de refeições informado.
-- "pre_treino" e "pos_treino" não têm horário fixo: são consumidas antes e depois do treino, no horário em que o usuário treinar.
+- Se a categoria da dieta for "fit" e o usuário fizer 5 refeições, cada modelo de dia deve conter exatamente uma refeição de cada tipo: "cafe_da_manha", "almoco", "pre_treino", "pos_treino" e "jantar".
+- Se a categoria da dieta for "fit" e o usuário fizer 6 refeições, inclua também exatamente uma "ceia" em cada modelo de dia.
+- Na categoria "fit", não inclua "lanche_da_manha" nem "lanche_da_tarde". "pre_treino" e "pos_treino" são duas refeições separadas, cada uma com seus próprios alimentos; não as una em uma única refeição.
+- "pre_treino" e "pos_treino" não têm horário ou período do dia fixo. Não presuma quando o usuário treina: a primeira é consumida antes e a segunda depois do treino.
 - Se a categoria da dieta for "normal": não inclua "pre_treino" nem "pos_treino"; escolha os lanches que couberem no total de refeições informado.
 - Suplementos (whey, hipercalórico, albumina, barra de proteína) só podem aparecer se o uso de suplementos estiver informado. Caso contrário, use fonte de proteína real da mesma categoria.
 - No máximo DUAS leguminosas diferentes (feijões, lentilha, ervilha, tremoço) por dia, para evitar volume e fibra excessivos.

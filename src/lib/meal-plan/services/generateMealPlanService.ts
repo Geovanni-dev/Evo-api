@@ -247,7 +247,12 @@ export const generateMealPlan = async (userId: string) => {
   } catch (error) {
     throw new RespostaJsonInvalidaError(error);
   }
-  const templates = buildFinalTemplates(parsed, foodReference, targets);
+  const templates = buildFinalTemplates(
+    parsed,
+    foodReference,
+    targets,
+    preferences,
+  );
   const week = expandTemplatesIntoWeek(templates);
   // validate against the adjusted targets, not the original ones
   const schema = buildMealPlanSchema(targets);

@@ -4,7 +4,10 @@ import {
   DietaForaDaMetaError,
   QuantidadeInvalidaError,
 } from '../../../errors.js';
-import { proposedMealPlanSchema } from '../schemas/mealPlanAI.js';
+import {
+  buildProposedMealPlanSchema,
+  type MealPlanValidationOptions,
+} from '../schemas/mealPlanAI.js';
 
 // ------------ Types
 
@@ -48,8 +51,9 @@ function limitsVariety(food: FoodReference) {
 export function validateProposedMealPlan(
   raw: unknown,
   allowedFoods: FoodReference[],
+  options: MealPlanValidationOptions,
 ) {
-  const proposal = proposedMealPlanSchema.parse(raw);
+  const proposal = buildProposedMealPlanSchema(options).parse(raw);
   const foodsById = buildFoodsById(allowedFoods);
   const selectedIds = new Set<string>();
 
@@ -559,8 +563,9 @@ export function buildFinalTemplates(
   raw: unknown,
   allowedFoods: FoodReference[],
   targets: Targets,
+  options: MealPlanValidationOptions,
 ) {
-  const proposal = validateProposedMealPlan(raw, allowedFoods);
+  const proposal = validateProposedMealPlan(raw, allowedFoods, options);
   const foodsById = buildFoodsById(allowedFoods);
 
   const build = (day: ProposedDay) =>
