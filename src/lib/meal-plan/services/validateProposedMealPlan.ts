@@ -478,24 +478,100 @@ export function fitDayPortions(day: ResolvedDay, targets: Targets) {
   }
 
   for (const portion of portions) {
-    portion.grams = Math.round(portion.grams);
+    portion.grams = Math.round(portion.grams / 5) * 5;
   }
 
-  const finalTotal = calculateTotal(portions);
-  const finalMealTotals = day.meals.map(() => ({
-    calories: 0,
-    protein: 0,
-  }));
+  const evaluatePortions = () => {
+    const total = calculateTotal(portions);
+    const mealTotals = day.meals.map(() => ({ calories: 0, protein: 0 }));
 
-  for (const portion of portions) {
-    const mealTotal = finalMealTotals[portion.mealIndex];
-    if (!mealTotal) continue;
+    for (const portion of portions) {
+      const mealTotal = mealTotals[portion.mealIndex];
+      if (!mealTotal) continue;
 
-    const nutrition = calculateFoodNutrition(portion.food, portion.grams);
+      const nutrition = calculateFoodNutrition(portion.food, portion.grams);
+      mealTotal.calories += nutrition.calories;
+      mealTotal.protein += nutrition.protein;
+    }
 
-    mealTotal.calories += nutrition.calories;
-    mealTotal.protein += nutrition.protein;
+    const dailyViolation = NUTRIENTS.reduce((sum, nutrient) => {
+      const excess = Math.max(
+        0,
+        Math.abs(total[nutrient] - goal[nutrient]) - tolerance[nutrient],
+      );
+      return sum + (excess / tolerance[nutrient]) ** 2;
+    }, 0);
+
+    const mealViolation = mealGoals.reduce((sum, mealGoal, index) => {
+      const mealTotal = mealTotals[index];
+      if (!mealTotal) return sum;
+
+      const calorieExcess = Math.max(
+        0,
+        Math.abs(mealTotal.calories - mealGoal.calories) - mealGoal.tolerance,
+      );
+      const proteinShortfall = Math.max(
+        0,
+        mealGoal.proteinMin - 1 - mealTotal.protein,
+      );
+
+      return (
+        sum +
+        (calorieExcess / mealGoal.tolerance) ** 2 +
+        (proteinShortfall / Math.max(5, mealGoal.proteinMin * 0.05)) ** 2
+      );
+    }, 0);
+
+    return { total, mealTotals, violation: dailyViolation + mealViolation };
+  };
+
+  const adjustmentOrder = portions
+    .map((portion, index) => ({
+      index,
+      isCeia: day.meals[portion.mealIndex]?.mealType === 'ceia',
+    }))
+    .sort((a, b) => Number(b.isCeia) - Number(a.isCeia))
+    .map(({ index }) => index);
+
+  let evaluation = evaluatePortions();
+
+  for (let attempt = 0; attempt < 20 && evaluation.violation > 0; attempt++) {
+    let bestIndex = -1;
+    let bestGrams = 0;
+    let bestViolation = evaluation.violation;
+
+    for (const index of adjustmentOrder) {
+      const portion = portions[index];
+      if (!portion) continue;
+
+      for (const change of [-5, 5]) {
+        const candidateGrams = portion.grams + change;
+        if (candidateGrams < portion.min || candidateGrams > portion.max) {
+          continue;
+        }
+
+        portion.grams = candidateGrams;
+        const candidateViolation = evaluatePortions().violation;
+        portion.grams -= change;
+
+        if (candidateViolation < bestViolation) {
+          bestIndex = index;
+          bestGrams = candidateGrams;
+          bestViolation = candidateViolation;
+        }
+      }
+    }
+
+    if (bestIndex < 0) break;
+
+    const bestPortion = portions[bestIndex];
+    if (!bestPortion) break;
+    bestPortion.grams = bestGrams;
+    evaluation = evaluatePortions();
   }
+
+  const finalTotal = evaluation.total;
+  const finalMealTotals = evaluation.mealTotals;
 
   const outsideDailyTolerance = NUTRIENTS.some(
     (nutrient) =>
