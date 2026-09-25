@@ -2,11 +2,15 @@ import prisma from '../../prisma/prisma.js';
 import { OAuth2Client } from 'google-auth-library';
 import { env } from '../../Configs/envs.js';
 import { PayloadVazioError } from '../../../errors.js';
-import { createAppToken } from './tokenService.js';
+import {
+  createAppToken,
+  createRefreshToken,
+  hashRefreshToken,
+} from './tokenService.js';
 
 const client = new OAuth2Client();
 
-export const verifyGoogleToken = async (idToken: string) => {
+export async function verifyGoogleToken(idToken: string) {
   const ticket = await client.verifyIdToken({
     idToken,
     audience: env.GOOGLE_CLIENT_ID,
@@ -20,10 +24,10 @@ export const verifyGoogleToken = async (idToken: string) => {
     email: payload.email,
     name: payload.name ?? null,
   };
-};
+}
 
-export const findGoogleAuthProviderBySub = async (sub: string) =>
-  await prisma.authProvider.findUnique({
+export async function findGoogleAuthProviderBySub(sub: string) {
+  return prisma.authProvider.findUnique({
     where: {
       provider_providerUserId: {
         provider: 'google',
@@ -32,6 +36,7 @@ export const findGoogleAuthProviderBySub = async (sub: string) =>
     },
     include: { user: true },
   });
+}
 
 export const loginWithGoogle = async (idToken: string) => {
   const googleData = await verifyGoogleToken(idToken);
@@ -71,11 +76,24 @@ export const loginWithGoogle = async (idToken: string) => {
       });
     }
   }
+  const refreshToken = createRefreshToken();
+  const tokenHash = hashRefreshToken(refreshToken);
+  const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+  const session = await prisma.authSession.create({
+    data: {
+      userId: user.id,
+      expiresAt,
+      refreshTokens: {
+        create: { tokenHash },
+      },
+    },
+  });
 
-  const token = createAppToken(user.id,);
+  const token = createAppToken(user.id, session.id);
 
   return {
     token,
+    refreshToken,
     user: {
       id: user.id,
       name: user.name,
