@@ -1,7 +1,10 @@
 import prisma from '../../prisma/prisma.js';
 import { OAuth2Client } from 'google-auth-library';
 import { env } from '../../Configs/envs.js';
-import { PayloadVazioError } from '../../../errors.js';
+import {
+  GoogleTokenInvalidoError,
+  PayloadVazioError,
+} from '../../../errors.js';
 import {
   createAppToken,
   createRefreshToken,
@@ -11,10 +14,14 @@ import {
 const client = new OAuth2Client();
 
 export async function verifyGoogleToken(idToken: string) {
-  const ticket = await client.verifyIdToken({
-    idToken,
-    audience: env.GOOGLE_CLIENT_ID,
-  });
+  const ticket = await client
+    .verifyIdToken({
+      idToken,
+      audience: env.GOOGLE_CLIENT_ID,
+    })
+    .catch(() => {
+      throw new GoogleTokenInvalidoError();
+    });
   const payload = ticket.getPayload();
   if (!payload?.sub || !payload.email || payload.email_verified !== true) {
     throw new PayloadVazioError();

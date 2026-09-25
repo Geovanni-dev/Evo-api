@@ -101,3 +101,17 @@ export class PayloadVazioError extends Error {
     this.name = 'PayloadVazioError';
   }
 }
+
+export class GoogleTokenInvalidoError extends Error {
+  constructor() {
+    super('Token Google inválido');
+    this.name = 'GoogleTokenInvalidoError';
+  }
+}
+
+export class RefreshTokenInvalidoError extends Error {
+  constructor() {
+    super('Sessão inválida ou expirada');
+    this.name = 'RefreshTokenInvalidoError';
+  }
+}

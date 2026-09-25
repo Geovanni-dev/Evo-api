@@ -6,6 +6,7 @@ import nutritionGoalsRoutes from './lib/nutrition-goals/routes/nutritionGoalsRou
 import iaRoutes from './lib/Chat/routes/chatRoutes.js';
 import userPreferences from './lib/user-preferences/routes/preferencesRoutes.js';
 import userMealPlan from './lib/meal-plan/routes/mealPlanRoutes.js';
+import authRoutes from './lib/auth/routes/authRoutes.js';
 
 //============================== Server
 
@@ -29,6 +30,7 @@ class Server {
     this.app.use('/ai', iaRoutes);
     this.app.use('/preferences', userPreferences);
     this.app.use('/meal-plan', userMealPlan);
+    this.app.use('/auth', authRoutes);
     this.app.get('/', (_req, res) => {
       res.send('Servidor rodando com sucesso!');
     });
