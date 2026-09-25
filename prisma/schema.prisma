@@ -65,6 +65,7 @@ model User {
   waterLogs       WaterLog[]
   mealPlans       MealPlan[]
   userPreferences UserPreferences?
+  authSessions    AuthSession[]
 }
 
 // ========= auth providers (google, apple, etc.)
@@ -210,4 +211,30 @@ model FoodReference {
   isVegan         Boolean      @default(false)
 
   @@index([category])
+}
+
+// A revocable login session with an absolute expiration date
+model AuthSession {
+  id        String    @id @default(uuid())
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+}
+// used token hashes are retained to detect reuse after rotation
+model RefreshToken {
+  id        String    @id @default(uuid())
+  sessionId String
+  tokenHash String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  session AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }

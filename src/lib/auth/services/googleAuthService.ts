@@ -72,7 +72,7 @@ export const loginWithGoogle = async (idToken: string) => {
     }
   }
 
-  const token = createAppToken(user.id);
+  const token = createAppToken(user.id,);
 
   return {
     token,
