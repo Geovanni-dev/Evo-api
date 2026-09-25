@@ -94,3 +94,10 @@ export class AlimentosInsuficientesError extends Error {
     this.name = 'AlimentosInsuficientesError';
   }
 }
+
+export class PayloadVazioError extends Error {
+  constructor() {
+    super('Payload vazio ou não devolve todos os dados necessários');
+    this.name = 'PayloadVazioError';
+  }
+}
