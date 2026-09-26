@@ -15,7 +15,7 @@ import {
   refreshSession,
 } from '../services/refreshSessionService.js';
 
-export async function googleLogin(req: Request, res: Response) {
+export const googleLogin = async (req: Request, res: Response) => {
   try {
     const { idToken } = googleLoginSchema.parse(req.body);
     const result = await loginWithGoogle(idToken);
@@ -34,9 +34,9 @@ export async function googleLogin(req: Request, res: Response) {
 
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
-}
+};
 
-export async function refreshLogin(req: Request, res: Response) {
+export const refreshLogin = async (req: Request, res: Response) => {
   try {
     const { refreshToken } = refreshSessionSchema.parse(req.body);
     const result = await refreshSession(refreshToken);
@@ -52,13 +52,13 @@ export async function refreshLogin(req: Request, res: Response) {
 
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
-}
+};
 
-export async function logout(req: Request, res: Response) {
+export const logout = async (req: Request, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Não autenticado' });
   }
 
   await logoutSession(req.user.sub, req.user.sid);
   return res.status(204).send();
-}
+};

@@ -4,7 +4,11 @@ import {
   updateMealPlan,
   storeMealPlan,
 } from '../controller/mealPlanController.js';
+import { authMiddlewareUser } from '../../middlewares/requireAuth.js';
+
 const router = Router();
+
+router.use(authMiddlewareUser);
 
 router.get('/active', indexMealPlan);
 

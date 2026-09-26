@@ -17,11 +17,9 @@ import {
 
 export const indexMealPlan = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const result = await getActiveMealPlan(userId);
     return res.status(200).json(result);
@@ -33,11 +31,9 @@ export const indexMealPlan = async (req: Request, res: Response) => {
 
 export const updateMealPlan = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const nutritionGoal = await prisma.userNutritionGoal.findUnique({
       where: { userId },
@@ -69,11 +65,9 @@ export const updateMealPlan = async (req: Request, res: Response) => {
 
 export const storeMealPlan = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const { plan, targets, warnings } = await generateMealPlan(userId);
     const savedPlan = await updateActiveMealPlan(userId, {

@@ -10,7 +10,10 @@ export const storeChat = async (req: Request, res: Response) => {
     if (!message) {
       return res.status(400).json({ error: 'Mensagem não fornecida' });
     }
-    const userId = req.headers['x-user-id'] as string;
+    const userId = req.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
+    }
     const response = await chatWithAI({
       messages: message,
       context,

@@ -2,6 +2,7 @@ import { RespostaVaziaError } from '../../../errors.js';
 import { deepSeek } from '../../AI-Models/client.js';
 import { chatPrompt } from '../../prompts/chatPrompt.js';
 import { getChatCache, setChatCache } from './chatCache.js';
+
 //=================types
 type Context = {
   calories: number;

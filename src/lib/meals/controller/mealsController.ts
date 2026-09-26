@@ -20,14 +20,10 @@ import logger from '../../logger.js';
 
 export const store = async (req: Request, res: Response) => {
   try {
-    logger.info(req.headers, 'Headers:');
-    logger.info(req.body, 'Body:');
     const payload = CreateMealSchema.parse(req.body);
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const meal = await createMeal(payload, userId);
     return res.status(201).json(meal);
@@ -60,11 +56,9 @@ export const store = async (req: Request, res: Response) => {
 
 export const index = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const date = req.query.date as string | undefined;
     const result = await getDailyMeals(userId, date);
@@ -84,11 +78,9 @@ export const index = async (req: Request, res: Response) => {
 
 export const show = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const { mealType } = req.params;
     if (!mealType) {
@@ -118,11 +110,9 @@ export const show = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
   try {
     const payload = UpdateMealSchema.parse(req.body);
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const { mealId } = req.params;
     if (!mealId) {
@@ -155,11 +145,9 @@ export const update = async (req: Request, res: Response) => {
 
 export const destroy = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const { mealId } = req.params;
     if (!mealId) {
@@ -184,11 +172,9 @@ export const destroy = async (req: Request, res: Response) => {
 
 export const destroyItem = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const { mealId, itemId } = req.params;
     if (!mealId) {
@@ -219,11 +205,9 @@ export const destroyItem = async (req: Request, res: Response) => {
 
 export const indexMealSummary = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const date = DateSchema.parse(req.query);
     const result = await getMealSummary(userId, date);

@@ -8,8 +8,11 @@ import {
   destroyItem,
   indexMealSummary,
 } from '../controller/mealsController.js';
+import { authMiddlewareUser } from '../../middlewares/requireAuth.js';
 
 const router = Router();
+
+router.use(authMiddlewareUser);
 
 router.post('/', store);
 

@@ -1,4 +1,4 @@
-import Routes from 'express';
+import { Router } from 'express';
 
 import {
   indexPref,
@@ -6,8 +6,11 @@ import {
   indexRest,
   updateRest,
 } from '../controller/preferencesController.js';
+import { authMiddlewareUser } from '../../middlewares/requireAuth.js';
 
-const router = Routes.Router();
+const router = Router();
+
+router.use(authMiddlewareUser);
 
 router.get('/', indexPref);
 

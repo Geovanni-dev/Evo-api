@@ -16,11 +16,9 @@ import logger from '../../logger.js';
 
 export const indexPref = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const result = await getPreferences(userId);
     return res.status(200).json(result);
@@ -33,11 +31,9 @@ export const indexPref = async (req: Request, res: Response) => {
 export const updatePref = async (req: Request, res: Response) => {
   try {
     const payload = PreferenceSchema.parse(req.body);
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const result = await updatePreferences(userId, payload);
     return res.status(200).json(result);
@@ -59,11 +55,9 @@ export const updatePref = async (req: Request, res: Response) => {
 
 export const indexRest = async (req: Request, res: Response) => {
   try {
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const result = await getRestrictions(userId);
     return res.status(200).json(result);
@@ -76,11 +70,9 @@ export const indexRest = async (req: Request, res: Response) => {
 export const updateRest = async (req: Request, res: Response) => {
   try {
     const payload = RestrictionSchema.parse(req.body);
-    const userId =
-      (req.headers['x-user-id'] as string) ||
-      (process.env.DEFAULT_USER_ID as string);
+    const userId = req.user?.sub;
     if (!userId) {
-      return res.status(401).json({ error: 'Id do usuário não fornecido' });
+      return res.status(401).json({ error: 'Id do usuário não forncecido' });
     }
     const result = await updateRestrictions(userId, payload);
     return res.status(200).json(result);
